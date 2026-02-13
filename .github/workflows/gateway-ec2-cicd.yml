@@ -1,17 +1,26 @@
-name: Gateway CI/CD
+name: Gateway EC2 CI/CD
 
 on:
   push:
     branches: ["main"]
+    paths:
+      - "**/*.py"
+      - "requirements.txt"
+      - "manage.py"
+      - ".github/workflows/gateway-ec2-cicd.yml"
   workflow_dispatch:
 
 concurrency:
-  group: gateway-prod-deploy
+  group: gateway-ec2-prod
   cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   ci:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -22,14 +31,17 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-      - name: Run Django checks
+      - name: Django check
         run: python manage.py check
 
   deploy:
     needs: ci
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.2.0
@@ -37,35 +49,36 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          script_stop: true
           script: |
             set -euo pipefail
 
             APP_HOME="/home/ubuntu/schemaclient-gateway"
-            SERVICE_NAME="schemaclient-gateway"
             BRANCH="main"
             VENV_DIR="$APP_HOME/venv"
-            DJANGO_DIR="$APP_HOME"
 
             cd "$APP_HOME"
-            git fetch --all --prune
+            git fetch origin "$BRANCH"
             git checkout "$BRANCH"
             git pull --ff-only origin "$BRANCH"
 
             if [ ! -d "$VENV_DIR" ]; then
-              echo "venv not found" >&2
-              exit 1
+              python3 -m venv "$VENV_DIR"
             fi
 
-            if [ ! -f "$DJANGO_DIR/manage.py" ]; then
+            if [ ! -f "$APP_HOME/manage.py" ]; then
               echo "manage.py not found" >&2
               exit 1
             fi
 
-            "$VENV_DIR/bin/pip" install -r "$DJANGO_DIR/requirements.txt"
-            "$VENV_DIR/bin/python" "$DJANGO_DIR/manage.py" migrate --noinput
-            "$VENV_DIR/bin/python" "$DJANGO_DIR/manage.py" collectstatic --noinput
-            "$VENV_DIR/bin/python" "$DJANGO_DIR/manage.py" check --deploy
+            "$VENV_DIR/bin/python" -m pip install --upgrade pip
+            "$VENV_DIR/bin/pip" install -r "$APP_HOME/requirements.txt"
+            "$VENV_DIR/bin/python" "$APP_HOME/manage.py" migrate --noinput
+            "$VENV_DIR/bin/python" "$APP_HOME/manage.py" collectstatic --noinput
+            "$VENV_DIR/bin/python" "$APP_HOME/manage.py" check
 
-            sudo systemctl restart "$SERVICE_NAME"
+            sudo systemctl restart schemaclient-gateway
+            sudo systemctl is-active --quiet schemaclient-gateway
             sudo nginx -t
             sudo systemctl reload nginx
+            curl -fsS https://mysmeclabs.com/api/tunnels/health >/dev/null

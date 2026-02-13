@@ -48,6 +48,8 @@ media/
 *.pem
 *.key
 *.crt
+github_ec2_deploy
+github_ec2_deploy.pub
 
 # Tool caches and reports
 .pytest_cache/
