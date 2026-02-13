@@ -196,3 +196,42 @@ class AuthApiTests(TestCase):
             },
         )
         self.assertEqual(response.status_code, 400)
+
+    def test_desktop_login_force_login_clears_existing_session(self):
+        user_model = get_user_model()
+        user_model.objects.create_user(username="bob", password="StrongPass!123", email="bob@example.com")
+        self.assertTrue(self.client.login(username="bob", password="StrongPass!123"))
+
+        start_response = self.client.get(
+            "/api/auth/desktop/login",
+            {
+                "redirect_uri": "http://127.0.0.1:4567/auth/callback",
+                "state": "state123",
+                "force_login": "1",
+            },
+        )
+        self.assertEqual(start_response.status_code, 302)
+        self.assertIn("/api/auth/login", start_response["Location"])
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+        login_url = urlparse(start_response["Location"])
+        next_url = parse_qs(login_url.query).get("next", [""])[0]
+        self.assertIn("force_login_done=1", next_url)
+
+        login_response = self.client.post(
+            "/api/auth/login",
+            data={
+                "username": "bob",
+                "password": "StrongPass!123",
+                "next": next_url,
+            },
+        )
+        self.assertEqual(login_response.status_code, 302)
+
+        desktop_redirect = self.client.get(login_response["Location"])
+        self.assertEqual(desktop_redirect.status_code, 302)
+        parsed = urlparse(desktop_redirect["Location"])
+        self.assertEqual(f"{parsed.scheme}://{parsed.netloc}{parsed.path}", "http://127.0.0.1:4567/auth/callback")
+        query = parse_qs(parsed.query)
+        self.assertIn("code", query)
+        self.assertEqual(query.get("state", [None])[0], "state123")

@@ -3,9 +3,9 @@ from __future__ import annotations
 import json
 import secrets
 from typing import Any
-from urllib.parse import urlencode, urlparse
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
-from django.contrib.auth import login
+from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.db import transaction
 from django.http import HttpRequest, HttpResponse, JsonResponse
@@ -108,16 +108,43 @@ def _authenticate_bearer_user(request: HttpRequest) -> User:
     return user
 
 
+def _parse_truthy(raw: str | None, *, default: bool = False) -> bool:
+    if raw is None:
+        return default
+    return str(raw).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _desktop_login_next_target(request: HttpRequest, *, mark_force_login_done: bool) -> str:
+    parsed = urlparse(request.get_full_path())
+    params = parse_qsl(parsed.query, keep_blank_values=True)
+
+    force_login = _parse_truthy(request.GET.get("force_login"), default=True)
+    if force_login:
+        params = [(k, v) for (k, v) in params if k != "force_login_done"]
+        if not any(k == "force_login" for (k, _v) in params):
+            params.append(("force_login", "1"))
+        if mark_force_login_done:
+            params.append(("force_login_done", "1"))
+
+    query = urlencode(params, doseq=True)
+    return urlunparse(("", "", parsed.path, "", query, ""))
+
+
 @require_GET
 def desktop_login_start(request: HttpRequest) -> HttpResponse:
     redirect_uri = str(request.GET.get("redirect_uri", "")).strip()
     state = str(request.GET.get("state", "")).strip()
+    force_login = _parse_truthy(request.GET.get("force_login"), default=True)
+    force_login_done = _parse_truthy(request.GET.get("force_login_done"), default=False)
     if not _is_allowed_redirect_uri(redirect_uri):
         return HttpResponse("Invalid redirect_uri. Use localhost callback URL.", status=400)
 
+    if force_login and not force_login_done and request.user.is_authenticated:
+        logout(request)
+
     if not request.user.is_authenticated:
         login_url = reverse("desktop_login_form")
-        next_target = request.get_full_path()
+        next_target = _desktop_login_next_target(request, mark_force_login_done=True)
         return redirect(f"{login_url}?{urlencode({'next': next_target})}")
 
     user = request.user
