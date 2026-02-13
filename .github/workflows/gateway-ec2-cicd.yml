@@ -1,0 +1,71 @@
+name: Gateway CI/CD
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+concurrency:
+  group: gateway-prod-deploy
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Django checks
+        run: python manage.py check
+
+  deploy:
+    needs: ci
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -euo pipefail
+
+            APP_HOME="/home/ubuntu/schemaclient-gateway"
+            SERVICE_NAME="schemaclient-gateway"
+            BRANCH="main"
+            VENV_DIR="$APP_HOME/venv"
+            DJANGO_DIR="$APP_HOME"
+
+            cd "$APP_HOME"
+            git fetch --all --prune
+            git checkout "$BRANCH"
+            git pull --ff-only origin "$BRANCH"
+
+            if [ ! -d "$VENV_DIR" ]; then
+              echo "venv not found" >&2
+              exit 1
+            fi
+
+            if [ ! -f "$DJANGO_DIR/manage.py" ]; then
+              echo "manage.py not found" >&2
+              exit 1
+            fi
+
+            "$VENV_DIR/bin/pip" install -r "$DJANGO_DIR/requirements.txt"
+            "$VENV_DIR/bin/python" "$DJANGO_DIR/manage.py" migrate --noinput
+            "$VENV_DIR/bin/python" "$DJANGO_DIR/manage.py" collectstatic --noinput
+            "$VENV_DIR/bin/python" "$DJANGO_DIR/manage.py" check --deploy
+
+            sudo systemctl restart "$SERVICE_NAME"
+            sudo nginx -t
+            sudo systemctl reload nginx
