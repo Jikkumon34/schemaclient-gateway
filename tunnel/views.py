@@ -12,7 +12,8 @@ from urllib.parse import urlparse
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.conf import settings
-from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.http import HttpRequest, HttpResponse, HttpResponseNotFound, JsonResponse
+from django.shortcuts import render
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
@@ -278,7 +279,9 @@ def gateway_dispatch(request: HttpRequest, path: str = "") -> HttpResponse:
 
     tunnel_id = getattr(request, "tunnel_id", None)
     if not tunnel_id:
-        return HttpResponse("SchemaClient Tunnel Gateway is running for gopika")
+        if request.path in {"", "/"} and request.method == "GET":
+            return render(request, "tunnel/home.html")
+        return HttpResponseNotFound("Not found")
 
     try:
         tunnel = Tunnel.objects.get(tunnel_id=tunnel_id)
