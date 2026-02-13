@@ -6,7 +6,7 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import Tunnel, TunnelRequest
+from .models import ApiCollection, ApiCollectionItem, ApiSchema, Tunnel, TunnelRequest
 
 
 @override_settings(
@@ -340,3 +340,133 @@ class AuthApiTests(TestCase):
         query = parse_qs(parsed.query)
         self.assertIn("code", query)
         self.assertEqual(query.get("state", [None])[0], "state123")
+
+
+class DataSyncApiTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.user = user_model.objects.create_user(
+            username="syncuser",
+            password="StrongPass!123",
+            email="sync@example.com",
+        )
+        self.access_token = str(RefreshToken.for_user(self.user).access_token)
+        self.auth_header = f"Bearer {self.access_token}"
+
+    def test_collections_snapshot_round_trip_for_authenticated_user(self):
+        payload = {
+            "collections": [
+                {
+                    "id": "col-1",
+                    "name": "Main Collection",
+                    "description": "Primary collection",
+                    "baseUrl": "https://api.example.com",
+                    "tags": ["core", "prod"],
+                    "auth": {"type": "bearer", "token": "abc"},
+                    "scripts": {"preRequest": "console.log('pre')", "tests": "console.log('test')"},
+                    "items": [
+                        {
+                            "id": "folder-1",
+                            "type": "folder",
+                            "name": "Folder",
+                            "description": "Folder node",
+                        },
+                        {
+                            "id": "req-1",
+                            "type": "request",
+                            "name": "List Users",
+                            "parentId": "folder-1",
+                            "method": "GET",
+                            "url": "/users",
+                            "headers": [{"id": "h1", "key": "Accept", "value": "application/json", "enabled": True}],
+                            "params": [{"id": "p1", "key": "page", "value": "1", "enabled": True}],
+                            "body": {"type": "none", "content": ""},
+                        },
+                    ],
+                }
+            ]
+        }
+
+        put_response = self.client.put(
+            "/api/collections",
+            data=json.dumps(payload),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=self.auth_header,
+        )
+        self.assertEqual(put_response.status_code, 200)
+        body = put_response.json()
+        self.assertEqual(len(body["collections"]), 1)
+        self.assertEqual(body["collections"][0]["name"], "Main Collection")
+        self.assertEqual(len(body["collections"][0]["items"]), 2)
+
+        self.assertEqual(ApiCollection.objects.filter(owner=self.user).count(), 1)
+        self.assertEqual(ApiCollectionItem.objects.filter(collection__owner=self.user).count(), 2)
+
+        get_response = self.client.get(
+            "/api/collections",
+            HTTP_AUTHORIZATION=self.auth_header,
+        )
+        self.assertEqual(get_response.status_code, 200)
+        result = get_response.json()
+        self.assertEqual(len(result["collections"]), 1)
+        self.assertEqual(result["collections"][0]["id"], "col-1")
+
+    def test_schemas_snapshot_round_trip_for_authenticated_user(self):
+        payload = {
+            "schemas": [
+                {
+                    "id": "schema-1",
+                    "name": "User Schema",
+                    "description": "Schema for user response",
+                    "version": "1.0.0",
+                    "source": "schema Response { id: string; }",
+                    "request": {"params": [{"name": "id", "type": "string"}]},
+                    "response": {"name": "Response", "type": "object"},
+                    "createdAt": 1000,
+                    "updatedAt": 2000,
+                }
+            ]
+        }
+
+        put_response = self.client.put(
+            "/api/schemas",
+            data=json.dumps(payload),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=self.auth_header,
+        )
+        self.assertEqual(put_response.status_code, 200)
+        body = put_response.json()
+        self.assertEqual(len(body["schemas"]), 1)
+        self.assertEqual(body["schemas"][0]["name"], "User Schema")
+
+        self.assertEqual(ApiSchema.objects.filter(owner=self.user).count(), 1)
+
+        get_response = self.client.get(
+            "/api/schemas",
+            HTTP_AUTHORIZATION=self.auth_header,
+        )
+        self.assertEqual(get_response.status_code, 200)
+        result = get_response.json()
+        self.assertEqual(len(result["schemas"]), 1)
+        self.assertEqual(result["schemas"][0]["id"], "schema-1")
+
+    def test_collections_and_schemas_reject_guest_tokens(self):
+        guest = self.client.post("/api/auth/guest", data=json.dumps({}), content_type="application/json")
+        guest_token = guest.json()["access_token"]
+        guest_auth = f"Bearer {guest_token}"
+
+        collection_response = self.client.put(
+            "/api/collections",
+            data=json.dumps({"collections": []}),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=guest_auth,
+        )
+        self.assertEqual(collection_response.status_code, 403)
+
+        schema_response = self.client.put(
+            "/api/schemas",
+            data=json.dumps({"schemas": []}),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=guest_auth,
+        )
+        self.assertEqual(schema_response.status_code, 403)

@@ -13,6 +13,21 @@ TUNNEL_ID_VALIDATOR = RegexValidator(
     message="Tunnel ID must be 4-32 chars, lowercase letters/digits/hyphen, and cannot start/end with hyphen.",
 )
 
+HTTP_METHOD_CHOICES = [
+    ("GET", "GET"),
+    ("POST", "POST"),
+    ("PUT", "PUT"),
+    ("PATCH", "PATCH"),
+    ("DELETE", "DELETE"),
+    ("HEAD", "HEAD"),
+    ("OPTIONS", "OPTIONS"),
+]
+
+COLLECTION_ITEM_TYPE_CHOICES = [
+    ("folder", "Folder"),
+    ("request", "Request"),
+]
+
 
 class Tunnel(models.Model):
     owner = models.ForeignKey("accounts.User", on_delete=models.CASCADE, related_name="tunnels", null=True, blank=True)
@@ -98,3 +113,92 @@ class TunnelRequest(models.Model):
         if self.query_string:
             return f"{self.path}?{self.query_string}"
         return self.path
+
+
+class ApiCollection(models.Model):
+    owner = models.ForeignKey("accounts.User", on_delete=models.CASCADE, related_name="api_collections")
+    client_id = models.CharField(max_length=64)
+    name = models.CharField(max_length=160)
+    description = models.TextField(blank=True, default="")
+    base_url = models.URLField(blank=True, default="")
+    tags = models.JSONField(default=list, blank=True)
+    variables = models.JSONField(default=list, blank=True)
+    auth = models.JSONField(default=dict, blank=True)
+    scripts = models.JSONField(default=dict, blank=True)
+    created_at_ms = models.BigIntegerField(default=0)
+    updated_at_ms = models.BigIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True, db_index=True)
+
+    class Meta:
+        ordering = ["-updated_at", "-created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["owner", "client_id"], name="api_collection_owner_client_uidx"),
+        ]
+        indexes = [
+            models.Index(fields=["owner", "updated_at"], name="api_coll_owner_updated_idx"),
+            models.Index(fields=["owner", "created_at"], name="api_coll_owner_created_idx"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.owner_id}:{self.name}"
+
+
+class ApiCollectionItem(models.Model):
+    collection = models.ForeignKey(ApiCollection, on_delete=models.CASCADE, related_name="items")
+    client_id = models.CharField(max_length=64)
+    parent_client_id = models.CharField(max_length=64, null=True, blank=True)
+    item_type = models.CharField(max_length=16, choices=COLLECTION_ITEM_TYPE_CHOICES, default="request", db_index=True)
+    name = models.CharField(max_length=160)
+    description = models.TextField(blank=True, default="")
+    method = models.CharField(max_length=8, choices=HTTP_METHOD_CHOICES, blank=True, default="")
+    url = models.TextField(blank=True, default="")
+    headers = models.JSONField(default=list, blank=True)
+    params = models.JSONField(default=list, blank=True)
+    body = models.JSONField(default=dict, blank=True)
+    sort_order = models.PositiveIntegerField(default=0)
+    created_at_ms = models.BigIntegerField(default=0)
+    updated_at_ms = models.BigIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True, db_index=True)
+
+    class Meta:
+        ordering = ["sort_order", "created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["collection", "client_id"], name="api_coll_item_collection_client_uidx"),
+        ]
+        indexes = [
+            models.Index(fields=["collection", "parent_client_id", "sort_order"], name="api_item_tree_idx"),
+            models.Index(fields=["collection", "item_type"], name="api_item_type_idx"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.collection_id}:{self.name}"
+
+
+class ApiSchema(models.Model):
+    owner = models.ForeignKey("accounts.User", on_delete=models.CASCADE, related_name="api_schemas")
+    client_id = models.CharField(max_length=64)
+    name = models.CharField(max_length=160)
+    description = models.TextField(blank=True, default="")
+    version = models.CharField(max_length=32, blank=True, default="")
+    source = models.TextField(blank=True, default="")
+    request_schema = models.JSONField(default=dict, blank=True)
+    response_schema = models.JSONField(default=dict, blank=True)
+    created_at_ms = models.BigIntegerField(default=0)
+    updated_at_ms = models.BigIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True, db_index=True)
+
+    class Meta:
+        ordering = ["-updated_at", "-created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["owner", "client_id"], name="api_schema_owner_client_uidx"),
+        ]
+        indexes = [
+            models.Index(fields=["owner", "updated_at"], name="api_schema_owner_updated_idx"),
+            models.Index(fields=["owner", "created_at"], name="api_schema_owner_created_idx"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.owner_id}:{self.name}"
