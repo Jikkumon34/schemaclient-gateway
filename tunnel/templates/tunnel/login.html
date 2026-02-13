@@ -1,109 +1,561 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SchemaClient Login</title>
+  <title>Sign In — SchemaClient</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..800&display=swap" rel="stylesheet">
   <style>
-    body {
+    *,
+    *::before,
+    *::after {
       margin: 0;
-      background: #0b1220;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #050505;
       color: #e5e7eb;
-      font-family: "Segoe UI", Tahoma, sans-serif;
+      font-family: 'JetBrains Mono', monospace;
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 24px;
+      position: relative;
+      overflow: hidden;
     }
-    .card {
+
+    /* Grid background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(to right, rgba(31, 41, 55, 0.06) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(31, 41, 55, 0.06) 1px, transparent 1px);
+      background-size: 40px 40px;
+      z-index: 0;
+    }
+
+    /* CRT overlay */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+      background-size: 100% 2px, 3px 100%;
+      pointer-events: none;
+      z-index: 50;
+      opacity: 0.15;
+    }
+
+    /* Radial glow behind card */
+    .glow-bg {
+      position: fixed;
+      width: 600px;
+      height: 600px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: radial-gradient(circle, rgba(0, 255, 65, 0.06) 0%, transparent 70%);
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* Login card */
+    .login-card {
+      position: relative;
+      z-index: 10;
       width: 100%;
-      max-width: 420px;
-      background: #111827;
-      border: 1px solid #1f2937;
-      border-radius: 12px;
-      padding: 24px;
-      box-sizing: border-box;
+      max-width: 440px;
+      background: linear-gradient(#111111, #111111) padding-box,
+        linear-gradient(135deg, rgba(0, 255, 65, 0.3), rgba(0, 255, 65, 0.05)) border-box;
+      border: 1px solid transparent;
+      border-radius: 2px;
+      overflow: hidden;
+      box-shadow: 0 0 60px rgba(0, 255, 65, 0.04), 0 25px 50px rgba(0, 0, 0, 0.4);
     }
-    h1 {
-      margin: 0 0 8px;
-      font-size: 22px;
+
+    .login-card:hover {
+      box-shadow: 0 0 80px rgba(0, 255, 65, 0.08), 0 25px 50px rgba(0, 0, 0, 0.4);
     }
-    p {
-      margin: 0 0 18px;
-      color: #9ca3af;
+
+    /* Title bar (terminal-style) */
+    .title-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #141414;
+      padding: 10px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .title-bar-dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .title-bar-dots span {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .dot-red {
+      background: #ff5f57;
+    }
+
+    .dot-yellow {
+      background: #febc2e;
+    }
+
+    .dot-green {
+      background: #28c840;
+    }
+
+    .title-bar-text {
+      font-size: 11px;
+      color: #6b7280;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .title-bar-label {
+      font-size: 10px;
+      color: #4b5563;
+    }
+
+    /* Card body */
+    .card-body {
+      padding: 32px 28px;
+    }
+
+    /* Logo area */
+    .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 4px;
+      border: 1px solid rgba(0, 255, 65, 0.4);
+      background: rgba(0, 255, 65, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo-icon svg {
+      width: 18px;
+      height: 18px;
+      color: #00ff41;
+    }
+
+    .logo-text {
       font-size: 14px;
+      font-weight: 700;
+      color: #00ff41;
+      letter-spacing: 0.05em;
     }
-    label {
-      display: block;
-      margin-top: 12px;
+
+    .logo-text span {
+      color: #4b5563;
+    }
+
+    .blink-cursor {
+      display: inline-block;
+      width: 8px;
+      height: 16px;
+      background: #00ff41;
+      margin-left: 2px;
+      animation: blink 1s step-end infinite;
+    }
+
+    @keyframes blink {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0;
+      }
+    }
+
+    /* Heading */
+    .login-heading {
+      font-size: 20px;
+      font-weight: 800;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
       margin-bottom: 6px;
-      font-size: 13px;
-      color: #cbd5e1;
     }
-    input {
+
+    .login-sub {
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 28px;
+      line-height: 1.6;
+    }
+
+    .login-sub code {
+      color: rgba(0, 255, 65, 0.7);
+      font-size: 11px;
+    }
+
+    /* Terminal prompt prefix */
+    .prompt {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+      font-size: 11px;
+    }
+
+    .prompt-user {
+      color: #00ff41;
+      font-weight: 600;
+    }
+
+    .prompt-sep {
+      color: #4b5563;
+    }
+
+    .prompt-path {
+      color: #60a5fa;
+    }
+
+    .prompt-cmd {
+      color: #d1d5db;
+    }
+
+    /* Form fields */
+    .field {
+      margin-bottom: 20px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 11px;
+      color: #9ca3af;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .field input,
+    .field input[type="text"],
+    .field input[type="password"] {
       width: 100%;
-      background: #0f172a;
-      color: #f9fafb;
-      border: 1px solid #334155;
-      border-radius: 8px;
-      padding: 10px 12px;
-      box-sizing: border-box;
-    }
-    .error {
-      margin-top: 12px;
-      background: rgba(239, 68, 68, 0.12);
-      border: 1px solid rgba(239, 68, 68, 0.35);
-      color: #fecaca;
-      border-radius: 8px;
-      padding: 10px 12px;
+      background: #0a0a0a;
+      color: #00ff41;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      padding: 12px 14px;
+      font-family: 'JetBrains Mono', monospace;
       font-size: 13px;
+      transition: all 0.2s ease;
+      outline: none;
     }
-    button {
-      margin-top: 18px;
+
+    .field input:focus {
+      border-color: rgba(0, 255, 65, 0.4);
+      box-shadow: 0 0 15px rgba(0, 255, 65, 0.1);
+    }
+
+    .field input::placeholder {
+      color: #374151;
+    }
+
+    /* Error box */
+    .error-box {
+      margin-bottom: 20px;
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      border-radius: 2px;
+      padding: 10px 14px;
+      font-size: 12px;
+      color: #fca5a5;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .error-box svg {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+      margin-top: 1px;
+      color: #ef4444;
+    }
+
+    /* Submit button */
+    .submit-btn {
       width: 100%;
       border: none;
-      border-radius: 8px;
-      padding: 11px 12px;
-      background: #06b6d4;
-      color: #0f172a;
+      border-radius: 2px;
+      padding: 13px 16px;
+      background: #00ff41;
+      color: #000;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
       font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
       cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
-    button:hover {
-      background: #22d3ee;
+
+    .submit-btn:hover {
+      background: #33ff66;
+      box-shadow: 0 0 30px rgba(0, 255, 65, 0.3);
     }
+
+    .submit-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Hint */
     .hint {
-      margin-top: 12px;
-      color: #64748b;
-      font-size: 12px;
+      margin-top: 16px;
+      color: #4b5563;
+      font-size: 10px;
       text-align: center;
+      letter-spacing: 0.04em;
+      line-height: 1.6;
+    }
+
+    .hint svg {
+      display: inline;
+      width: 10px;
+      height: 10px;
+      vertical-align: -1px;
+      margin-right: 4px;
+    }
+
+    /* Divider */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 24px 0;
+    }
+
+    .divider-line {
+      flex: 1;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .divider-text {
+      font-size: 10px;
+      color: #4b5563;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+    }
+
+    /* Status badge */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      color: #6b7280;
+      padding: 6px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.02);
+      margin-bottom: 20px;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #00ff41;
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-dot {
+
+      0%,
+      100% {
+        box-shadow: 0 0 3px rgba(0, 255, 65, 0.4);
+      }
+
+      50% {
+        box-shadow: 0 0 12px rgba(0, 255, 65, 0.7);
+      }
+    }
+
+    .status-label {
+      color: #00ff41;
+      font-weight: 600;
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      .card-body {
+        padding: 24px 20px;
+      }
+
+      .login-heading {
+        font-size: 17px;
+      }
+
+      .glow-bg {
+        width: 350px;
+        height: 350px;
+      }
     }
   </style>
 </head>
+
 <body>
-  <form class="card" method="post">
+  <div class="glow-bg"></div>
+
+  <form class="login-card" method="post" autocomplete="off">
     {% csrf_token %}
-    <h1>Sign in to SchemaClient</h1>
-    <p>Use your mysmeclabs.com account to continue in the desktop app.</p>
     <input type="hidden" name="next" value="{{ next }}">
 
-    <label for="id_username">Username</label>
-    {{ form.username }}
-
-    <label for="id_password">Password</label>
-    {{ form.password }}
-
-    {% if form.non_field_errors %}
-      <div class="error">
-        {% for err in form.non_field_errors %}
-          <div>{{ err }}</div>
-        {% endfor %}
+    <!-- Title bar -->
+    <div class="title-bar">
+      <div class="title-bar-dots">
+        <span class="dot-red"></span>
+        <span class="dot-yellow"></span>
+        <span class="dot-green"></span>
       </div>
-    {% endif %}
+      <div class="title-bar-text">
+        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+        schemaclient — auth
+      </div>
+      <div class="title-bar-label">secure</div>
+    </div>
 
-    <button type="submit">Sign In</button>
-    <div class="hint">After login, browser will return to your desktop app automatically.</div>
+    <!-- Card body -->
+    <div class="card-body">
+
+      <!-- Logo -->
+      <div class="logo-area">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+          </svg>
+        </div>
+        <div>
+          <div class="logo-text">SchemaClient<span>_</span></div>
+        </div>
+        <span class="blink-cursor"></span>
+      </div>
+
+      <!-- Status -->
+      <div class="status-badge">
+        <span class="status-dot"></span>
+        <span class="status-label">SECURE</span>
+        <span style="width:1px;height:10px;background:#374151;"></span>
+        <span>Desktop Auth Gateway</span>
+      </div>
+
+      <!-- Heading -->
+      <h1 class="login-heading">Authentication Required</h1>
+      <p class="login-sub">
+        Sign in with your <code>mysmeclabs.com</code> credentials to authorize the desktop client.
+      </p>
+
+      <!-- Terminal prompt -->
+      <div class="prompt">
+        <span class="prompt-user">root@auth</span>
+        <span class="prompt-sep">:</span>
+        <span class="prompt-path">~/session</span>
+        <span class="prompt-sep">$</span>
+        <span class="prompt-cmd">login --interactive</span>
+      </div>
+
+      <div class="divider">
+        <div class="divider-line"></div>
+        <div class="divider-text">credentials</div>
+        <div class="divider-line"></div>
+      </div>
+
+      <!-- Error messages -->
+      {% if form.non_field_errors %}
+      <div class="error-box">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+        </svg>
+        <div>
+          {% for err in form.non_field_errors %}
+          <div>{{ err }}</div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Username -->
+      <div class="field">
+        <label for="id_username">
+          <svg style="display:inline;width:12px;height:12px;vertical-align:-2px;margin-right:4px" fill="none"
+            stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+          Username
+        </label>
+        {{ form.username }}
+      </div>
+
+      <!-- Password -->
+      <div class="field">
+        <label for="id_password">
+          <svg style="display:inline;width:12px;height:12px;vertical-align:-2px;margin-right:4px" fill="none"
+            stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+          Password
+        </label>
+        {{ form.password }}
+      </div>
+
+      <!-- Submit -->
+      <button type="submit" class="submit-btn">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+            d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+        </svg>
+        Authenticate
+      </button>
+
+      <!-- Hint -->
+      <div class="hint">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        After authentication, the browser will redirect back to your desktop app automatically.
+      </div>
+    </div>
   </form>
 </body>
+
 </html>

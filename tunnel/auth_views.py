@@ -5,8 +5,9 @@ import secrets
 from typing import Any
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
+from django import forms
 from django.contrib.auth import login, logout
-from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.db import transaction
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
@@ -20,6 +21,22 @@ from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from accounts.models import DesktopAuthCode, User
+
+
+class UserRegistrationForm(UserCreationForm):
+    email = forms.EmailField(required=True)
+
+    class Meta(UserCreationForm.Meta):
+        model = User
+        fields = ("username", "email", "password1", "password2")
+
+    def clean_email(self) -> str:
+        email = str(self.cleaned_data.get("email") or "").strip().lower()
+        if not email:
+            raise forms.ValidationError("Email is required.")
+        if User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError("An account with this email already exists.")
+        return email
 
 
 def _json_error(detail: str, status: int) -> JsonResponse:
@@ -81,7 +98,12 @@ def _is_allowed_redirect_uri(redirect_uri: str) -> bool:
     return False
 
 
-def _safe_next_url(request: HttpRequest, raw_next: str | None) -> str:
+def _safe_next_url(
+    request: HttpRequest,
+    raw_next: str | None,
+    *,
+    default_url_name: str = "desktop_login_start",
+) -> str:
     if raw_next and raw_next.startswith("/"):
         return raw_next
     if raw_next and url_has_allowed_host_and_scheme(
@@ -90,7 +112,7 @@ def _safe_next_url(request: HttpRequest, raw_next: str | None) -> str:
         require_https=request.is_secure(),
     ):
         return raw_next
-    return reverse("desktop_login_start")
+    return reverse(default_url_name)
 
 
 def _authenticate_bearer_user(request: HttpRequest) -> User:
@@ -174,6 +196,32 @@ def desktop_login_form(request: HttpRequest) -> HttpResponse:
     return render(
         request,
         "tunnel/login.html",
+        {
+            "form": form,
+            "next": next_url,
+        },
+    )
+
+
+@require_http_methods(["GET", "POST"])
+def desktop_register_form(request: HttpRequest) -> HttpResponse:
+    if request.method == "POST":
+        form = UserRegistrationForm(request.POST)
+        next_url = _safe_next_url(request, request.POST.get("next"), default_url_name="desktop_login_form")
+        if form.is_valid():
+            user = form.save(commit=False)
+            user.is_guest = False
+            user.email = form.cleaned_data["email"]
+            user.save()
+            login(request, user)
+            return redirect(next_url)
+    else:
+        form = UserRegistrationForm()
+        next_url = _safe_next_url(request, request.GET.get("next"), default_url_name="desktop_login_form")
+
+    return render(
+        request,
+        "tunnel/register.html",
         {
             "form": form,
             "next": next_url,
