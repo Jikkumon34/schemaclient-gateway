@@ -170,6 +170,18 @@ class TunnelApiTests(TestCase):
         response = self.client.get("/api/posts", HTTP_HOST="offline1.mysmeclabs.com")
         self.assertEqual(response.status_code, 503)
 
+    def test_gateway_auth_route_on_tunnel_subdomain_is_forwarded_to_tunnel_dispatch(self):
+        Tunnel.objects.create(
+            owner=self.user,
+            tunnel_id="authsub1",
+            connect_key_hash=Tunnel.hash_connect_key("abc"),
+            is_active=False,
+            last_seen=timezone.now(),
+        )
+        response = self.client.get("/api/auth/login", HTTP_HOST="authsub1.mysmeclabs.com")
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.json()["detail"], "Tunnel is offline")
+
     def test_gateway_dispatch_times_out_without_response(self):
         tunnel = Tunnel.objects.create(
             owner=self.user,
