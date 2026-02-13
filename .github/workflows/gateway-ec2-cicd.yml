@@ -3,11 +3,6 @@ name: Gateway EC2 CI/CD
 on:
   push:
     branches: ["main"]
-    paths:
-      - "**/*.py"
-      - "requirements.txt"
-      - "manage.py"
-      - ".github/workflows/gateway-ec2-cicd.yml"
   workflow_dispatch:
 
 concurrency:
@@ -77,8 +72,8 @@ jobs:
             "$VENV_DIR/bin/python" "$APP_HOME/manage.py" collectstatic --noinput
             "$VENV_DIR/bin/python" "$APP_HOME/manage.py" check
 
-            sudo systemctl restart schemaclient-gateway
-            sudo systemctl is-active --quiet schemaclient-gateway
-            sudo nginx -t
-            sudo systemctl reload nginx
+            sudo -n systemctl restart schemaclient-gateway
+            sudo -n systemctl is-active --quiet schemaclient-gateway
+            sudo -n nginx -t
+            sudo -n systemctl reload nginx
             curl -fsS https://mysmeclabs.com/api/tunnels/health >/dev/null
