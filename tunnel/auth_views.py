@@ -282,3 +282,11 @@ def auth_me(request: HttpRequest) -> JsonResponse:
         return _json_error("Unauthorized", 401)
 
     return JsonResponse({"user": _serialize_user(user)})
+
+
+@csrf_exempt
+@require_http_methods(["GET", "POST"])
+def auth_logout(request: HttpRequest) -> JsonResponse:
+    was_authenticated = bool(request.user.is_authenticated)
+    logout(request)
+    return JsonResponse({"ok": True, "was_authenticated": was_authenticated})

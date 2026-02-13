@@ -187,6 +187,24 @@ class AuthApiTests(TestCase):
         self.assertEqual(me_response.status_code, 200)
         self.assertTrue(me_response.json()["user"]["is_guest"])
 
+    def test_logout_endpoint_clears_authenticated_session(self):
+        user_model = get_user_model()
+        user_model.objects.create_user(username="charlie", password="StrongPass!123", email="charlie@example.com")
+        self.assertTrue(self.client.login(username="charlie", password="StrongPass!123"))
+        self.assertIn("_auth_user_id", self.client.session)
+
+        response = self.client.post("/api/auth/logout")
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["ok"])
+        self.assertTrue(response.json()["was_authenticated"])
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_logout_endpoint_is_idempotent_when_already_logged_out(self):
+        response = self.client.post("/api/auth/logout")
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["ok"])
+        self.assertFalse(response.json()["was_authenticated"])
+
     def test_desktop_login_rejects_invalid_redirect_uri(self):
         response = self.client.get(
             "/api/auth/desktop/login",
