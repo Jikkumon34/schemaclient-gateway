@@ -278,15 +278,15 @@ def gateway_dispatch(request: HttpRequest, path: str = "") -> HttpResponse:
 
     tunnel_id = getattr(request, "tunnel_id", None)
     if not tunnel_id:
-        return HttpResponse("SchemaClient Tunnel Gateway is running for jk")
+        return HttpResponse("SchemaClient Tunnel Gateway is running for apppu")
 
     try:
         tunnel = Tunnel.objects.get(tunnel_id=tunnel_id)
     except Tunnel.DoesNotExist:
-        return _json_error("Tunnel not found for jk", 404)
+        return _json_error("Tunnel not found for ammu", 404)
 
     if not _is_tunnel_online(tunnel):
-        return _json_error("Tunnel is offline for js", 503)
+        return _json_error("Tunnel is offline for ardfs", 503)
 
     max_request_body_bytes = _setting_int("TUNNEL_MAX_REQUEST_BODY_BYTES", 5 * 1024 * 1024, 1024, 50 * 1024 * 1024)
     body_bytes = request.body or b""
