@@ -209,59 +209,6 @@
         html {
             scroll-behavior: smooth;
         }
-
-        /* ===== RESPONSIVE / MOBILE ===== */
-        @media (max-width: 767px) {
-            .orbit-ring {
-                display: none;
-            }
-
-            .hero-gradient {
-                padding-top: 2rem;
-                padding-bottom: 2rem;
-                min-height: auto !important;
-            }
-
-            .monitor-table-wrap {
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
-            }
-
-            .monitor-table-wrap table {
-                min-width: 540px;
-            }
-
-            .stats-bar>div {
-                border-right: none !important;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            }
-
-            .stats-bar>div:last-child {
-                border-bottom: none;
-            }
-
-            .arch-flow {
-                flex-direction: column;
-            }
-
-            .arch-flow .arch-arrow {
-                transform: rotate(90deg);
-            }
-
-            .mobile-menu {
-                display: none;
-            }
-
-            .mobile-menu.active {
-                display: flex;
-            }
-        }
-
-        @media (min-width: 768px) {
-            .mobile-menu-btn {
-                display: none !important;
-            }
-        }
     </style>
 </head>
 
@@ -279,7 +226,7 @@
     <!-- NAVBAR -->
     <!-- ============================================================ -->
     <nav class="fixed w-full z-40 border-b border-white/10 bg-sc-bg/90 backdrop-blur-md">
-        <div class="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <div
                     class="w-8 h-8 rounded border border-green-500/50 flex items-center justify-center bg-green-500/10">
@@ -303,33 +250,14 @@
                 <a href="#download"
                     class="hover:text-green-500 transition hover:underline decoration-green-500 decoration-2 underline-offset-4">Download</a>
             </div>
-            <div class="flex items-center gap-3">
-                <a href="#download"
-                    class="hidden sm:inline-block border border-green-500/50 text-green-500 px-4 py-1.5 text-xs hover:bg-green-500 hover:text-black transition-all duration-300 uppercase font-bold">
-                    Get Started
-                </a>
-                <!-- Mobile hamburger -->
-                <button onclick="document.getElementById('mobileMenu').classList.toggle('active')"
-                    class="mobile-menu-btn md:hidden text-green-500 p-1">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M4 6h16M4 12h16M4 18h16" />
-                    </svg>
-                </button>
-            </div>
-        </div>
-        <!-- Mobile Menu -->
-        <div id="mobileMenu"
-            class="mobile-menu flex-col bg-sc-bg border-t border-white/10 px-4 py-4 gap-4 text-xs uppercase tracking-widest text-gray-500">
-            <a href="#features" class="hover:text-green-500 transition py-2 border-b border-white/5">Features</a>
-            <a href="#how-it-works" class="hover:text-green-500 transition py-2 border-b border-white/5">How It
-                Works</a>
-            <a href="#monitor" class="hover:text-green-500 transition py-2 border-b border-white/5">Monitor</a>
-            <a href="#download" class="hover:text-green-500 transition py-2">Download</a>
+            <a href="#download"
+                class="border border-green-500/50 text-green-500 px-4 py-1.5 text-xs hover:bg-green-500 hover:text-black transition-all duration-300 uppercase font-bold">
+                Get Started
+            </a>
         </div>
     </nav>
 
-    <main class="relative z-10 pt-16 pb-20 max-w-7xl mx-auto px-4 md:px-6">
+    <main class="relative z-10 pt-16 pb-20 max-w-7xl mx-auto px-6">
 
         <!-- ============================================================ -->
         <!-- HERO SECTION -->
@@ -567,26 +495,22 @@
         <!-- ============================================================ -->
         <!-- STATS BAR -->
         <!-- ============================================================ -->
-        <section class="stats-bar grid grid-cols-2 md:grid-cols-4 border-b border-white/10 mb-16">
-            <div class="p-6 md:p-10 border-r border-white/10 hover:bg-white/5 transition group">
-                <div class="text-2xl md:text-4xl font-bold text-white mb-2 group-hover:text-green-400 transition">E2E
-                </div>
-                <div class="text-[10px] md:text-xs text-green-500 uppercase tracking-widest">Encrypted Tunnels</div>
+        <section class="grid grid-cols-2 md:grid-cols-4 border-b border-white/10 mb-16">
+            <div class="p-10 border-r border-white/10 hover:bg-white/5 transition group">
+                <div class="text-4xl font-bold text-white mb-2 group-hover:text-green-400 transition">E2E</div>
+                <div class="text-xs text-green-500 uppercase tracking-widest">Encrypted Tunnels</div>
             </div>
-            <div class="p-6 md:p-10 border-r border-white/10 hover:bg-white/5 transition group">
-                <div class="text-2xl md:text-4xl font-bold text-white mb-2 group-hover:text-green-400 transition">
-                    &lt;5ms</div>
-                <div class="text-[10px] md:text-xs text-green-500 uppercase tracking-widest">Proxy Overhead</div>
+            <div class="p-10 border-r border-white/10 hover:bg-white/5 transition group">
+                <div class="text-4xl font-bold text-white mb-2 group-hover:text-green-400 transition">&lt;5ms</div>
+                <div class="text-xs text-green-500 uppercase tracking-widest">Proxy Overhead</div>
             </div>
-            <div class="p-6 md:p-10 border-r border-white/10 hover:bg-white/5 transition group">
-                <div class="text-2xl md:text-4xl font-bold text-white mb-2 group-hover:text-green-400 transition">500+
-                </div>
-                <div class="text-[10px] md:text-xs text-green-500 uppercase tracking-widest">Logs Per Session</div>
+            <div class="p-10 border-r border-white/10 hover:bg-white/5 transition group">
+                <div class="text-4xl font-bold text-white mb-2 group-hover:text-green-400 transition">500+</div>
+                <div class="text-xs text-green-500 uppercase tracking-widest">Logs Per Session</div>
             </div>
-            <div class="p-6 md:p-10 hover:bg-white/5 transition group">
-                <div class="text-2xl md:text-4xl font-bold text-white mb-2 group-hover:text-green-400 transition">5
-                </div>
-                <div class="text-[10px] md:text-xs text-green-500 uppercase tracking-widest">Platforms Supported</div>
+            <div class="p-10 hover:bg-white/5 transition group">
+                <div class="text-4xl font-bold text-white mb-2 group-hover:text-green-400 transition">5</div>
+                <div class="text-xs text-green-500 uppercase tracking-widest">Platforms Supported</div>
             </div>
         </section>
 
@@ -725,8 +649,7 @@
                                 <div class="font-semibold text-white text-sm">Start Tunnel</div>
                                 <div class="text-xs text-gray-500 mt-1">Point SchemaClient at your local server (e.g.
                                     <code class="text-green-500/70">http://127.0.0.1:8000</code>) and connect to the
-                                    gateway.
-                                </div>
+                                    gateway.</div>
                             </div>
                         </li>
                         <li
@@ -808,22 +731,22 @@
                     <!-- Architecture Diagram -->
                     <div class="mt-6 bg-sc-surface border border-white/10 rounded-sm p-5">
                         <div class="text-xs text-gray-600 uppercase tracking-widest mb-4">Architecture Flow</div>
-                        <div class="arch-flow flex items-center justify-between text-xs text-center gap-2">
+                        <div class="flex items-center justify-between text-xs text-center gap-2">
                             <div class="flex-1 border border-green-500/30 rounded p-3 bg-green-500/5">
                                 <div class="text-green-500 font-bold mb-1">Client</div>
                                 <div class="text-gray-500">Browser / App</div>
                             </div>
-                            <div class="text-green-500 arch-arrow">→</div>
+                            <div class="text-green-500">→</div>
                             <div class="flex-1 border border-blue-500/30 rounded p-3 bg-blue-500/5">
                                 <div class="text-blue-400 font-bold mb-1">Gateway</div>
                                 <div class="text-gray-500">Public URL</div>
                             </div>
-                            <div class="text-green-500 arch-arrow">→</div>
+                            <div class="text-green-500">→</div>
                             <div class="flex-1 border border-yellow-500/30 rounded p-3 bg-yellow-500/5">
                                 <div class="text-yellow-400 font-bold mb-1">Tunnel</div>
                                 <div class="text-gray-500">E2E Encrypted</div>
                             </div>
-                            <div class="text-green-500 arch-arrow">→</div>
+                            <div class="text-green-500">→</div>
                             <div class="flex-1 border border-purple-500/30 rounded p-3 bg-purple-500/5">
                                 <div class="text-purple-400 font-bold mb-1">Localhost</div>
                                 <div class="text-gray-500">Your Server</div>
@@ -861,7 +784,7 @@
                     </div>
 
                     <!-- Mock monitor table -->
-                    <div class="bg-black overflow-hidden monitor-table-wrap">
+                    <div class="bg-black overflow-hidden">
                         <table class="w-full text-xs">
                             <thead>
                                 <tr class="text-gray-600 border-b border-white/5">

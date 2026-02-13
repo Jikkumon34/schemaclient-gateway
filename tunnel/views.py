@@ -280,7 +280,23 @@ def gateway_dispatch(request: HttpRequest, path: str = "") -> HttpResponse:
     tunnel_id = getattr(request, "tunnel_id", None)
     if not tunnel_id:
         if request.path in {"", "/"} and request.method == "GET":
-            return render(request, "tunnel/home.html")
+            max_request_body_bytes = _setting_int(
+                "TUNNEL_MAX_REQUEST_BODY_BYTES",
+                5 * 1024 * 1024,
+                1024,
+                50 * 1024 * 1024,
+            )
+            context = {
+                "base_domain": str(getattr(settings, "TUNNEL_BASE_DOMAIN", "")).strip().lower()
+                or request.get_host().split(":")[0].lower(),
+                "public_scheme": str(getattr(settings, "TUNNEL_PUBLIC_SCHEME", "https")).strip().lower() or "https",
+                "request_timeout_seconds": _setting_int("TUNNEL_REQUEST_TIMEOUT_SECONDS", 40, 1, 180),
+                "heartbeat_ttl_seconds": _setting_int("TUNNEL_HEARTBEAT_TTL_SECONDS", 120, 10, 600),
+                "db_poll_interval_ms": _setting_int("TUNNEL_DB_POLL_INTERVAL_MS", 120, 25, 1000),
+                "max_request_body_bytes": max_request_body_bytes,
+                "max_request_body_mb": round(max_request_body_bytes / (1024 * 1024), 1),
+            }
+            return render(request, "tunnel/home.html", context)
         return HttpResponseNotFound("Not found")
 
     try:
