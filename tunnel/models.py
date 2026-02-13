@@ -15,6 +15,7 @@ TUNNEL_ID_VALIDATOR = RegexValidator(
 
 
 class Tunnel(models.Model):
+    owner = models.ForeignKey("accounts.User", on_delete=models.CASCADE, related_name="tunnels", null=True, blank=True)
     tunnel_id = models.CharField(max_length=32, unique=True, validators=[TUNNEL_ID_VALIDATOR])
     connect_key_hash = models.CharField(max_length=64)
     is_active = models.BooleanField(default=False)
@@ -29,6 +30,7 @@ class Tunnel(models.Model):
     class Meta:
         ordering = ["-created_at"]
         indexes = [
+            models.Index(fields=["owner", "created_at"], name="tunnel_owner_created_idx"),
             models.Index(fields=["is_active", "last_seen"], name="tunnel_active_seen_idx"),
         ]
 

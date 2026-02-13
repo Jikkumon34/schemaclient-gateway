@@ -4,6 +4,7 @@ from urllib.parse import parse_qs, urlparse
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from django.utils import timezone
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import Tunnel, TunnelRequest
 
@@ -15,6 +16,16 @@ from .models import Tunnel, TunnelRequest
     TUNNEL_REQUEST_TIMEOUT_SECONDS=1,
 )
 class TunnelApiTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.user = user_model.objects.create_user(
+            username="tunneluser",
+            password="StrongPass!123",
+            email="tunnel@example.com",
+        )
+        self.access_token = str(RefreshToken.for_user(self.user).access_token)
+        self.auth_header = f"Bearer {self.access_token}"
+
     def test_tunnel_health_endpoint(self):
         response = self.client.get("/api/tunnels/health")
         self.assertEqual(response.status_code, 200)
@@ -29,6 +40,7 @@ class TunnelApiTests(TestCase):
             "/api/tunnels/create",
             data=json.dumps({}),
             content_type="application/json",
+            HTTP_AUTHORIZATION=self.auth_header,
         )
         self.assertEqual(response.status_code, 201)
         payload = response.json()
@@ -39,9 +51,18 @@ class TunnelApiTests(TestCase):
             f"https://{payload['tunnel_id']}.mysmeclabs.com",
         )
 
+    def test_create_tunnel_requires_authenticated_user(self):
+        response = self.client.post(
+            "/api/tunnels/create",
+            data=json.dumps({}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 401)
+
     def test_connect_and_disconnect_cycle(self):
         connect_key = "secret-key"
         tunnel = Tunnel.objects.create(
+            owner=self.user,
             tunnel_id="demo1234",
             connect_key_hash=Tunnel.hash_connect_key(connect_key),
             is_active=False,
@@ -57,6 +78,7 @@ class TunnelApiTests(TestCase):
                 }
             ),
             content_type="application/json",
+            HTTP_AUTHORIZATION=self.auth_header,
         )
         self.assertEqual(connect_response.status_code, 200)
 
@@ -68,6 +90,7 @@ class TunnelApiTests(TestCase):
             "/api/tunnels/disconnect",
             data=json.dumps({"tunnel_id": tunnel.tunnel_id, "connect_key": connect_key}),
             content_type="application/json",
+            HTTP_AUTHORIZATION=self.auth_header,
         )
         self.assertEqual(disconnect_response.status_code, 200)
 
@@ -88,6 +111,7 @@ class TunnelApiTests(TestCase):
 
     def test_gateway_dispatch_times_out_for_offline_tunnel(self):
         Tunnel.objects.create(
+            owner=self.user,
             tunnel_id="offline1",
             connect_key_hash=Tunnel.hash_connect_key("abc"),
             is_active=False,
@@ -98,6 +122,7 @@ class TunnelApiTests(TestCase):
 
     def test_gateway_dispatch_times_out_without_response(self):
         tunnel = Tunnel.objects.create(
+            owner=self.user,
             tunnel_id="online11",
             connect_key_hash=Tunnel.hash_connect_key("abc"),
             is_active=True,

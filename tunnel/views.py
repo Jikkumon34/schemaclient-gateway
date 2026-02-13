@@ -2,23 +2,32 @@ from __future__ import annotations
 
 import base64
 import json
+import logging
 import re
 import secrets
 import string
-import time
 from typing import Any
 from urllib.parse import urlparse
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
+from django.contrib.auth import get_user_model
 from django.conf import settings
+from django.db import IntegrityError
 from django.http import HttpRequest, HttpResponse, HttpResponseNotFound, JsonResponse
 from django.shortcuts import render
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 
 from .models import Tunnel, TunnelRequest
+from .runtime import register_response_waiter, unregister_response_waiter
+
+
+User = get_user_model()
+logger = logging.getLogger(__name__)
 
 
 TUNNEL_ID_PATTERN = re.compile(r"^[a-z0-9](?:[a-z0-9-]{2,30}[a-z0-9])?$")
@@ -46,6 +55,25 @@ def _setting_int(name: str, default: int, minimum: int, maximum: int) -> int:
 
 def _json_error(detail: str, status: int) -> JsonResponse:
     return JsonResponse({"detail": detail}, status=status)
+
+
+def _authenticate_bearer_user(request: HttpRequest) -> tuple[User | None, JsonResponse | None]:
+    auth = JWTAuthentication()
+    try:
+        header = auth.get_header(request)
+        if header is None:
+            return None, _json_error("Unauthorized", 401)
+        raw_token = auth.get_raw_token(header)
+        if raw_token is None:
+            return None, _json_error("Unauthorized", 401)
+        validated = auth.get_validated_token(raw_token)
+        user = auth.get_user(validated)
+    except (InvalidToken, TokenError):
+        return None, _json_error("Unauthorized", 401)
+
+    if not isinstance(user, User):
+        return None, _json_error("Unauthorized", 401)
+    return user, None
 
 
 def _parse_json_object(request: HttpRequest) -> tuple[dict[str, Any], JsonResponse | None]:
@@ -83,6 +111,28 @@ def _generate_unique_tunnel_id() -> str:
         candidate = _random_tunnel_id(12)
         if not Tunnel.objects.filter(tunnel_id=candidate).exists():
             return candidate
+
+
+def _create_tunnel_record(owner: User, requested_tunnel_id: str | None) -> tuple[Tunnel | None, str | None, JsonResponse | None]:
+    attempts = 1 if requested_tunnel_id else 10
+    for _ in range(attempts):
+        tunnel_id = requested_tunnel_id or _generate_unique_tunnel_id()
+        connect_key = secrets.token_urlsafe(24)
+        try:
+            tunnel = Tunnel.objects.create(
+                owner=owner,
+                tunnel_id=tunnel_id,
+                connect_key_hash=Tunnel.hash_connect_key(connect_key),
+                is_active=False,
+                ws_connected=False,
+                ws_connection_count=0,
+            )
+            return tunnel, connect_key, None
+        except IntegrityError:
+            if requested_tunnel_id:
+                return None, None, _json_error("Tunnel ID already exists", 409)
+            continue
+    return None, None, _json_error("Could not allocate a unique tunnel ID", 503)
 
 
 def _build_public_url(request: HttpRequest, tunnel_id: str) -> str:
@@ -124,7 +174,11 @@ def _read_tunnel_credentials(request: HttpRequest, payload: dict[str, Any] | Non
     return tunnel_id or "", connect_key
 
 
-def _authenticate_tunnel(request: HttpRequest, payload: dict[str, Any] | None = None) -> tuple[Tunnel | None, JsonResponse | None]:
+def _authenticate_tunnel(
+    request: HttpRequest,
+    user: User,
+    payload: dict[str, Any] | None = None,
+) -> tuple[Tunnel | None, JsonResponse | None]:
     tunnel_id, connect_key = _read_tunnel_credentials(request, payload)
     if not tunnel_id or not connect_key:
         return None, _json_error("tunnel_id and connect_key are required", 400)
@@ -133,6 +187,9 @@ def _authenticate_tunnel(request: HttpRequest, payload: dict[str, Any] | None = 
         tunnel = Tunnel.objects.get(tunnel_id=tunnel_id)
     except Tunnel.DoesNotExist:
         return None, _json_error("Tunnel not found", 404)
+
+    if tunnel.owner_id != user.id:
+        return None, _json_error("Forbidden", 403)
 
     if not tunnel.verify_connect_key(connect_key):
         return None, _json_error("Invalid connect key", 401)
@@ -186,6 +243,10 @@ def tunnel_health(request: HttpRequest) -> JsonResponse:
 @csrf_exempt
 @require_http_methods(["POST"])
 def create_tunnel(request: HttpRequest) -> JsonResponse:
+    user, user_error = _authenticate_bearer_user(request)
+    if user_error:
+        return user_error
+
     payload, error = _parse_json_object(request)
     if error:
         return error
@@ -194,18 +255,13 @@ def create_tunnel(request: HttpRequest) -> JsonResponse:
     if payload.get("tunnel_id") and not requested_tunnel_id:
         return _json_error("Invalid tunnel_id format", 400)
 
-    tunnel_id = requested_tunnel_id or _generate_unique_tunnel_id()
-    if Tunnel.objects.filter(tunnel_id=tunnel_id).exists():
-        return _json_error("Tunnel ID already exists", 409)
+    assert user is not None
+    tunnel, connect_key, create_error = _create_tunnel_record(user, requested_tunnel_id)
+    if create_error:
+        return create_error
+    assert tunnel is not None and connect_key is not None
 
-    connect_key = secrets.token_urlsafe(24)
-    tunnel = Tunnel.objects.create(
-        tunnel_id=tunnel_id,
-        connect_key_hash=Tunnel.hash_connect_key(connect_key),
-        is_active=False,
-        ws_connected=False,
-        ws_connection_count=0,
-    )
+    logger.info("Tunnel created", extra={"tunnel_id": tunnel.tunnel_id, "owner_id": user.id})
 
     return JsonResponse(
         {
@@ -220,11 +276,16 @@ def create_tunnel(request: HttpRequest) -> JsonResponse:
 @csrf_exempt
 @require_http_methods(["POST"])
 def connect_tunnel(request: HttpRequest) -> JsonResponse:
+    user, user_error = _authenticate_bearer_user(request)
+    if user_error:
+        return user_error
+
     payload, error = _parse_json_object(request)
     if error:
         return error
 
-    tunnel, auth_error = _authenticate_tunnel(request, payload)
+    assert user is not None
+    tunnel, auth_error = _authenticate_tunnel(request, user, payload)
     if auth_error:
         return auth_error
 
@@ -250,11 +311,16 @@ def connect_tunnel(request: HttpRequest) -> JsonResponse:
 @csrf_exempt
 @require_http_methods(["POST"])
 def disconnect_tunnel(request: HttpRequest) -> JsonResponse:
+    user, user_error = _authenticate_bearer_user(request)
+    if user_error:
+        return user_error
+
     payload, error = _parse_json_object(request)
     if error:
         return error
 
-    tunnel, auth_error = _authenticate_tunnel(request, payload)
+    assert user is not None
+    tunnel, auth_error = _authenticate_tunnel(request, user, payload)
     if auth_error:
         return auth_error
 
@@ -302,10 +368,10 @@ def gateway_dispatch(request: HttpRequest, path: str = "") -> HttpResponse:
     try:
         tunnel = Tunnel.objects.get(tunnel_id=tunnel_id)
     except Tunnel.DoesNotExist:
-        return _json_error("Tunnel not found for ammu", 404)
+        return _json_error("Tunnel not found", 404)
 
     if not _is_tunnel_online(tunnel):
-        return _json_error("Tunnel is offline for ardfs", 503)
+        return _json_error("Tunnel is offline", 503)
 
     max_request_body_bytes = _setting_int("TUNNEL_MAX_REQUEST_BODY_BYTES", 5 * 1024 * 1024, 1024, 50 * 1024 * 1024)
     body_bytes = request.body or b""
@@ -336,6 +402,7 @@ def gateway_dispatch(request: HttpRequest, path: str = "") -> HttpResponse:
         _mark_tunnel_timed_out(tunnel_request, "Channel layer unavailable")
         return _json_error("Gateway channel layer unavailable", 503)
 
+    waiter = register_response_waiter(str(tunnel_request.request_id))
     outbound_payload = {
         "type": "request",
         "request_id": str(tunnel_request.request_id),
@@ -356,36 +423,38 @@ def gateway_dispatch(request: HttpRequest, path: str = "") -> HttpResponse:
             },
         )
     except Exception:
+        unregister_response_waiter(str(tunnel_request.request_id))
         _mark_tunnel_timed_out(tunnel_request, "Failed to publish request to websocket client")
         return _json_error("Gateway could not dispatch request", 503)
 
     timeout_seconds = _setting_int("TUNNEL_REQUEST_TIMEOUT_SECONDS", 40, 1, 180)
-    poll_interval_seconds = _setting_int("TUNNEL_DB_POLL_INTERVAL_MS", 120, 25, 1000) / 1000
-    deadline = time.monotonic() + timeout_seconds
+    received = waiter.wait(timeout_seconds)
+    unregister_response_waiter(str(tunnel_request.request_id))
+    if not received:
+        _mark_tunnel_timed_out(tunnel_request, "Gateway timed out waiting for desktop client response")
+        return _json_error("Tunnel request timed out", 504)
 
-    while time.monotonic() < deadline:
-        tunnel_request.refresh_from_db(
-            fields=[
-                "status",
-                "response_status",
-                "response_headers",
-                "response_body_b64",
-            ]
-        )
-        if tunnel_request.status == TunnelRequest.STATUS_RESPONDED and tunnel_request.response_status:
-            response = HttpResponse(_decode_response_body(tunnel_request), status=tunnel_request.response_status)
-            for key, value in (tunnel_request.response_headers or {}).items():
-                name = str(key).strip()
-                if not name:
-                    continue
-                lower_name = name.lower()
-                if lower_name in HOP_BY_HOP_HEADERS or lower_name == "content-length":
-                    continue
-                response[name] = str(value)
-            return response
-        time.sleep(poll_interval_seconds)
+    tunnel_request.refresh_from_db(
+        fields=[
+            "status",
+            "response_status",
+            "response_headers",
+            "response_body_b64",
+        ]
+    )
+    if tunnel_request.status == TunnelRequest.STATUS_RESPONDED and tunnel_request.response_status:
+        response = HttpResponse(_decode_response_body(tunnel_request), status=tunnel_request.response_status)
+        for key, value in (tunnel_request.response_headers or {}).items():
+            name = str(key).strip()
+            if not name:
+                continue
+            lower_name = name.lower()
+            if lower_name in HOP_BY_HOP_HEADERS or lower_name == "content-length":
+                continue
+            response[name] = str(value)
+        return response
 
-    _mark_tunnel_timed_out(tunnel_request, "Gateway timed out waiting for desktop client response")
+    _mark_tunnel_timed_out(tunnel_request, "Gateway response state was incomplete")
     return _json_error("Tunnel request timed out", 504)
 
 

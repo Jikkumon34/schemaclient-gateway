@@ -158,10 +158,20 @@ TUNNEL_PUBLIC_SCHEME = "https"
 TUNNEL_REQUEST_TIMEOUT_SECONDS = 40
 TUNNEL_HEARTBEAT_TTL_SECONDS = 120
 TUNNEL_MAX_REQUEST_BODY_BYTES = 5 * 1024 * 1024
+TUNNEL_MAX_RESPONSE_BODY_BYTES = 5 * 1024 * 1024
 TUNNEL_DB_POLL_INTERVAL_MS = 120
 
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels.layers.InMemoryChannelLayer",
+CHANNEL_REDIS_URL = str(os.getenv("CHANNEL_REDIS_URL", "")).strip()
+if CHANNEL_REDIS_URL:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {"hosts": [CHANNEL_REDIS_URL]},
+        }
     }
-}
+else:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels.layers.InMemoryChannelLayer",
+        }
+    }

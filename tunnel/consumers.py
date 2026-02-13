@@ -1,15 +1,17 @@
 from __future__ import annotations
 
+import base64
 import json
 from typing import Any
-from urllib.parse import parse_qs
 
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
-from django.db.models import F
+from django.conf import settings
+from django.db.models import BooleanField, Case, F, Value, When
 from django.utils import timezone
 
 from .models import Tunnel, TunnelRequest
+from .runtime import notify_response_waiter
 
 
 class TunnelConsumer(AsyncWebsocketConsumer):
@@ -19,7 +21,7 @@ class TunnelConsumer(AsyncWebsocketConsumer):
 
     async def connect(self) -> None:
         tunnel_id = (self.scope.get("url_route", {}).get("kwargs", {}).get("tunnel_id") or "").strip().lower()
-        connect_key = self._query_param("connect_key")
+        connect_key = self._read_connect_key_from_authorization()
 
         if not tunnel_id or not connect_key:
             await self.close(code=4401)
@@ -88,13 +90,19 @@ class TunnelConsumer(AsyncWebsocketConsumer):
     async def send_json(self, payload: dict[str, Any]) -> None:
         await self.send(text_data=json.dumps(payload))
 
-    def _query_param(self, name: str) -> str:
-        raw = (self.scope.get("query_string") or b"").decode("utf-8", errors="ignore")
-        parsed = parse_qs(raw, keep_blank_values=True)
-        values = parsed.get(name)
-        if not values:
+    def _read_connect_key_from_authorization(self) -> str:
+        headers = self.scope.get("headers") or []
+        raw_auth = ""
+        for key, value in headers:
+            if key.lower() == b"authorization":
+                raw_auth = value.decode("utf-8", errors="ignore").strip()
+                break
+        if not raw_auth:
             return ""
-        return str(values[0]).strip()
+        prefix = "TunnelKey "
+        if not raw_auth.startswith(prefix):
+            return ""
+        return raw_auth[len(prefix) :].strip()
 
     @database_sync_to_async
     def _get_tunnel(self, tunnel_id: str) -> dict[str, Any] | None:
@@ -126,17 +134,25 @@ class TunnelConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def _mark_disconnected(self, tunnel_pk: int) -> None:
-        try:
-            tunnel = Tunnel.objects.get(pk=tunnel_pk)
-        except Tunnel.DoesNotExist:
-            return
-
-        new_count = max(0, tunnel.ws_connection_count - 1)
-        tunnel.ws_connection_count = new_count
-        tunnel.ws_connected = new_count > 0
-        if not tunnel.ws_connected:
-            tunnel.is_active = False
-        tunnel.save(update_fields=["ws_connection_count", "ws_connected", "is_active", "updated_at"])
+        now = timezone.now()
+        Tunnel.objects.filter(pk=tunnel_pk).update(
+            ws_connection_count=F("ws_connection_count") - 1,
+            updated_at=now,
+        )
+        Tunnel.objects.filter(pk=tunnel_pk, ws_connection_count__lt=0).update(ws_connection_count=0, updated_at=now)
+        Tunnel.objects.filter(pk=tunnel_pk).update(
+            ws_connected=Case(
+                When(ws_connection_count__gt=0, then=Value(True)),
+                default=Value(False),
+                output_field=BooleanField(),
+            ),
+            is_active=Case(
+                When(ws_connection_count__gt=0, then=Value(True)),
+                default=Value(False),
+                output_field=BooleanField(),
+            ),
+            updated_at=now,
+        )
 
     @database_sync_to_async
     def _touch_tunnel(self, tunnel_pk: int) -> None:
@@ -163,12 +179,25 @@ class TunnelConsumer(AsyncWebsocketConsumer):
         sanitized_headers = {str(k): str(v) for k, v in headers.items() if str(k).strip()}
 
         body_b64 = str(payload.get("body_b64") or "")
-        body_binary = bool(payload.get("body_binary", False))
-
+        raw_max = getattr(settings, "TUNNEL_MAX_RESPONSE_BODY_BYTES", 5 * 1024 * 1024)
         try:
-            body_size = int(payload.get("body_size", 0) or 0)
+            max_response_body_bytes = int(raw_max)
         except (TypeError, ValueError):
-            body_size = 0
+            max_response_body_bytes = 5 * 1024 * 1024
+        max_response_body_bytes = max(1024, max_response_body_bytes)
+        response_body = b""
+        if body_b64:
+            try:
+                response_body = base64.b64decode(body_b64.encode("ascii"), validate=True)
+            except (ValueError, TypeError):
+                return False, "body_b64 must be valid base64"
+
+        if len(response_body) > max_response_body_bytes:
+            return False, "Response body too large for tunnel forwarding"
+
+        body_binary = bool(payload.get("body_binary", False))
+        body_size = len(response_body)
+        normalized_body_b64 = base64.b64encode(response_body).decode("ascii") if response_body else ""
 
         try:
             tunnel_request = TunnelRequest.objects.get(request_id=request_id, tunnel_id=self.tunnel_pk)
@@ -179,9 +208,9 @@ class TunnelConsumer(AsyncWebsocketConsumer):
         tunnel_request.responded_at = timezone.now()
         tunnel_request.response_status = status
         tunnel_request.response_headers = sanitized_headers
-        tunnel_request.response_body_b64 = body_b64
+        tunnel_request.response_body_b64 = normalized_body_b64
         tunnel_request.response_body_binary = body_binary
-        tunnel_request.response_body_size = max(0, body_size)
+        tunnel_request.response_body_size = body_size
         tunnel_request.save(
             update_fields=[
                 "status",
@@ -193,5 +222,6 @@ class TunnelConsumer(AsyncWebsocketConsumer):
                 "response_body_size",
             ]
         )
+        notify_response_waiter(request_id)
 
         return True, ""
