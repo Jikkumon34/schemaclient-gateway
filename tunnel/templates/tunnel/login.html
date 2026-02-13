@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SchemaClient Login</title>
+  <style>
+    body {
+      margin: 0;
+      background: #0b1220;
+      color: #e5e7eb;
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      width: 100%;
+      max-width: 420px;
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 12px;
+      padding: 24px;
+      box-sizing: border-box;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 22px;
+    }
+    p {
+      margin: 0 0 18px;
+      color: #9ca3af;
+      font-size: 14px;
+    }
+    label {
+      display: block;
+      margin-top: 12px;
+      margin-bottom: 6px;
+      font-size: 13px;
+      color: #cbd5e1;
+    }
+    input {
+      width: 100%;
+      background: #0f172a;
+      color: #f9fafb;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 10px 12px;
+      box-sizing: border-box;
+    }
+    .error {
+      margin-top: 12px;
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: #fecaca;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 13px;
+    }
+    button {
+      margin-top: 18px;
+      width: 100%;
+      border: none;
+      border-radius: 8px;
+      padding: 11px 12px;
+      background: #06b6d4;
+      color: #0f172a;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #22d3ee;
+    }
+    .hint {
+      margin-top: 12px;
+      color: #64748b;
+      font-size: 12px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <form class="card" method="post">
+    {% csrf_token %}
+    <h1>Sign in to SchemaClient</h1>
+    <p>Use your mysmeclabs.com account to continue in the desktop app.</p>
+    <input type="hidden" name="next" value="{{ next }}">
+
+    <label for="id_username">Username</label>
+    {{ form.username }}
+
+    <label for="id_password">Password</label>
+    {{ form.password }}
+
+    {% if form.non_field_errors %}
+      <div class="error">
+        {% for err in form.non_field_errors %}
+          <div>{{ err }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <button type="submit">Sign In</button>
+    <div class="hint">After login, browser will return to your desktop app automatically.</div>
+  </form>
+</body>
+</html>
