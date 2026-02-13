@@ -31,9 +31,14 @@ class TunnelConsumer(AsyncWebsocketConsumer):
         try:
             tunnel_id = (self.scope.get("url_route", {}).get("kwargs", {}).get("tunnel_id") or "").strip().lower()
             connect_key = self._read_connect_key()
-            user = self._read_authenticated_user()
+            raw_auth_token = self._read_auth_token()
 
-            if not tunnel_id or not connect_key or user is None:
+            if not tunnel_id or not connect_key or not raw_auth_token:
+                await self.close(code=4401)
+                return
+
+            user = await self._resolve_authenticated_user(raw_auth_token)
+            if user is None:
                 await self.close(code=4401)
                 return
 
@@ -119,6 +124,13 @@ class TunnelConsumer(AsyncWebsocketConsumer):
                 return value.decode("utf-8", errors="ignore").strip()
         return ""
 
+    def _query_value(self, key: str) -> str:
+        query_string = (self.scope.get("query_string") or b"").decode("utf-8", errors="ignore")
+        if not query_string:
+            return ""
+        query = parse_qs(query_string)
+        return (query.get(key) or [""])[0].strip()
+
     def _read_connect_key(self) -> str:
         raw = self._header_value(b"x-tunnel-key")
         if raw:
@@ -127,15 +139,12 @@ class TunnelConsumer(AsyncWebsocketConsumer):
         prefix = "TunnelKey "
         if raw_auth.startswith(prefix):
             return raw_auth[len(prefix) :].strip()
-        query_string = (self.scope.get("query_string") or b"").decode("utf-8", errors="ignore")
-        if query_string:
-            query = parse_qs(query_string)
-            query_connect_key = (query.get("connect_key") or [""])[0].strip()
-            if query_connect_key:
-                return query_connect_key
+        query_connect_key = self._query_value("connect_key")
+        if query_connect_key:
+            return query_connect_key
         return ""
 
-    def _read_authenticated_user(self) -> User | None:
+    def _read_auth_token(self) -> str:
         raw_auth = self._header_value(b"authorization")
         raw_token = ""
         bearer_prefix = "Bearer "
@@ -148,7 +157,15 @@ class TunnelConsumer(AsyncWebsocketConsumer):
             else:
                 raw_token = raw_header_token.strip()
         if not raw_token:
-            return None
+            raw_token = self._query_value("access_token")
+        if not raw_token:
+            raw_token = self._query_value("auth_token")
+        if not raw_token:
+            return ""
+        return raw_token
+
+    @database_sync_to_async
+    def _resolve_authenticated_user(self, raw_token: str) -> User | None:
         auth = JWTAuthentication()
         try:
             validated = auth.get_validated_token(raw_token)
