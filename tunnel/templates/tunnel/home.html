@@ -210,6 +210,15 @@
             scroll-behavior: smooth;
         }
 
+        /* ===== MOBILE MENU (hidden by default on all sizes) ===== */
+        .mobile-menu {
+            display: none;
+        }
+
+        .mobile-menu.active {
+            display: flex;
+        }
+
         /* ===== RESPONSIVE / MOBILE ===== */
         @media (max-width: 767px) {
             .orbit-ring {
@@ -247,18 +256,14 @@
             .arch-flow .arch-arrow {
                 transform: rotate(90deg);
             }
-
-            .mobile-menu {
-                display: none;
-            }
-
-            .mobile-menu.active {
-                display: flex;
-            }
         }
 
         @media (min-width: 768px) {
             .mobile-menu-btn {
+                display: none !important;
+            }
+
+            .mobile-menu {
                 display: none !important;
             }
         }
