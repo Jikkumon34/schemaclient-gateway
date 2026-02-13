@@ -278,7 +278,7 @@ def gateway_dispatch(request: HttpRequest, path: str = "") -> HttpResponse:
 
     tunnel_id = getattr(request, "tunnel_id", None)
     if not tunnel_id:
-        return HttpResponse("SchemaClient Tunnel Gateway is running for apppu")
+        return HttpResponse("SchemaClient Tunnel Gateway is running for gopika")
 
     try:
         tunnel = Tunnel.objects.get(tunnel_id=tunnel_id)
