@@ -5,7 +5,6 @@ import json
 import logging
 import re
 import secrets
-import string
 from typing import Any
 from urllib.parse import urlparse
 
@@ -97,26 +96,34 @@ def _normalize_tunnel_id(raw_tunnel_id: Any) -> str | None:
     return tunnel_id
 
 
-def _random_tunnel_id(length: int = 8) -> str:
-    alphabet = string.ascii_lowercase + string.digits
-    return "".join(secrets.choice(alphabet) for _ in range(length))
+def _random_numeric_suffix(length: int = 6) -> str:
+    minimum = 10 ** (length - 1)
+    maximum = (10**length) - 1
+    return str(secrets.randbelow(maximum - minimum + 1) + minimum)
 
 
-def _generate_unique_tunnel_id() -> str:
-    for _ in range(20):
-        candidate = _random_tunnel_id(8)
-        if not Tunnel.objects.filter(tunnel_id=candidate).exists():
+def _generate_unique_user_tunnel_id(owner_id: int) -> str:
+    owner_part = str(owner_id)
+    base_prefix = f"u{owner_part}-"
+    if len(base_prefix) >= 28:
+        base_prefix = f"u{owner_part[-20:]}-"
+
+    max_length = 32
+    for _ in range(30):
+        suffix_len = max(4, min(8, max_length - len(base_prefix)))
+        suffix = _random_numeric_suffix(suffix_len)
+        candidate = f"{base_prefix}{suffix}"
+        if TUNNEL_ID_PATTERN.fullmatch(candidate) and not Tunnel.objects.filter(tunnel_id=candidate).exists():
             return candidate
-    while True:
-        candidate = _random_tunnel_id(12)
-        if not Tunnel.objects.filter(tunnel_id=candidate).exists():
-            return candidate
+    raise RuntimeError("Could not allocate a unique user tunnel id")
 
 
-def _create_tunnel_record(owner: User, requested_tunnel_id: str | None) -> tuple[Tunnel | None, str | None, JsonResponse | None]:
-    attempts = 1 if requested_tunnel_id else 10
-    for _ in range(attempts):
-        tunnel_id = requested_tunnel_id or _generate_unique_tunnel_id()
+def _create_tunnel_record(owner: User) -> tuple[Tunnel | None, str | None, JsonResponse | None]:
+    for _ in range(10):
+        try:
+            tunnel_id = _generate_unique_user_tunnel_id(int(owner.id))
+        except RuntimeError:
+            return None, None, _json_error("Could not allocate a unique tunnel ID", 503)
         connect_key = secrets.token_urlsafe(24)
         try:
             tunnel = Tunnel.objects.create(
@@ -129,8 +136,6 @@ def _create_tunnel_record(owner: User, requested_tunnel_id: str | None) -> tuple
             )
             return tunnel, connect_key, None
         except IntegrityError:
-            if requested_tunnel_id:
-                return None, None, _json_error("Tunnel ID already exists", 409)
             continue
     return None, None, _json_error("Could not allocate a unique tunnel ID", 503)
 
@@ -188,7 +193,7 @@ def _authenticate_tunnel(
     except Tunnel.DoesNotExist:
         return None, _json_error("Tunnel not found", 404)
 
-    if tunnel.owner_id != user.id:
+    if tunnel.owner_id is None or tunnel.owner_id != user.id:
         return None, _json_error("Forbidden", 403)
 
     if not tunnel.verify_connect_key(connect_key):
@@ -251,12 +256,11 @@ def create_tunnel(request: HttpRequest) -> JsonResponse:
     if error:
         return error
 
-    requested_tunnel_id = _normalize_tunnel_id(payload.get("tunnel_id")) if payload.get("tunnel_id") else None
-    if payload.get("tunnel_id") and not requested_tunnel_id:
-        return _json_error("Invalid tunnel_id format", 400)
+    if "tunnel_id" in payload:
+        return _json_error("Manual tunnel_id is not allowed. Tunnel IDs are server generated.", 400)
 
     assert user is not None
-    tunnel, connect_key, create_error = _create_tunnel_record(user, requested_tunnel_id)
+    tunnel, connect_key, create_error = _create_tunnel_record(user)
     if create_error:
         return create_error
     assert tunnel is not None and connect_key is not None

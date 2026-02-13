@@ -7,11 +7,16 @@ from typing import Any
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.db.models import BooleanField, Case, F, Value, When
 from django.utils import timezone
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 
 from .models import Tunnel, TunnelRequest
 from .runtime import notify_response_waiter
+
+User = get_user_model()
 
 
 class TunnelConsumer(AsyncWebsocketConsumer):
@@ -21,15 +26,20 @@ class TunnelConsumer(AsyncWebsocketConsumer):
 
     async def connect(self) -> None:
         tunnel_id = (self.scope.get("url_route", {}).get("kwargs", {}).get("tunnel_id") or "").strip().lower()
-        connect_key = self._read_connect_key_from_authorization()
+        connect_key = self._read_connect_key()
+        user = self._read_authenticated_user()
 
-        if not tunnel_id or not connect_key:
+        if not tunnel_id or not connect_key or user is None:
             await self.close(code=4401)
             return
 
         tunnel = await self._get_tunnel(tunnel_id)
         if tunnel is None:
             await self.close(code=4404)
+            return
+
+        if tunnel.get("owner_id") is None or int(tunnel["owner_id"]) != int(user.id):
+            await self.close(code=4403)
             return
 
         verified = await self._verify_connect_key(tunnel["pk"], connect_key)
@@ -90,25 +100,48 @@ class TunnelConsumer(AsyncWebsocketConsumer):
     async def send_json(self, payload: dict[str, Any]) -> None:
         await self.send(text_data=json.dumps(payload))
 
-    def _read_connect_key_from_authorization(self) -> str:
+    def _header_value(self, header_name: bytes) -> str:
         headers = self.scope.get("headers") or []
-        raw_auth = ""
         for key, value in headers:
-            if key.lower() == b"authorization":
-                raw_auth = value.decode("utf-8", errors="ignore").strip()
-                break
-        if not raw_auth:
-            return ""
+            if key.lower() == header_name.lower():
+                return value.decode("utf-8", errors="ignore").strip()
+        return ""
+
+    def _read_connect_key(self) -> str:
+        raw = self._header_value(b"x-tunnel-key")
+        if raw:
+            return raw
+        raw_auth = self._header_value(b"authorization")
         prefix = "TunnelKey "
+        if raw_auth.startswith(prefix):
+            return raw_auth[len(prefix) :].strip()
+        return ""
+
+    def _read_authenticated_user(self) -> User | None:
+        raw_auth = self._header_value(b"authorization")
+        if not raw_auth:
+            raw_auth = self._header_value(b"x-auth-token")
+        prefix = "Bearer "
         if not raw_auth.startswith(prefix):
-            return ""
-        return raw_auth[len(prefix) :].strip()
+            return None
+        raw_token = raw_auth[len(prefix) :].strip()
+        if not raw_token:
+            return None
+        auth = JWTAuthentication()
+        try:
+            validated = auth.get_validated_token(raw_token.encode("utf-8"))
+            user = auth.get_user(validated)
+        except (InvalidToken, TokenError):
+            return None
+        if not isinstance(user, User):
+            return None
+        return user
 
     @database_sync_to_async
     def _get_tunnel(self, tunnel_id: str) -> dict[str, Any] | None:
         try:
             tunnel = Tunnel.objects.get(tunnel_id=tunnel_id)
-            return {"pk": tunnel.pk}
+            return {"pk": tunnel.pk, "owner_id": tunnel.owner_id}
         except Tunnel.DoesNotExist:
             return None
 

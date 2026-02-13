@@ -46,6 +46,7 @@ class TunnelApiTests(TestCase):
         payload = response.json()
         self.assertIn("tunnel_id", payload)
         self.assertIn("connect_key", payload)
+        self.assertRegex(payload["tunnel_id"], rf"^u{self.user.id}-\d{{4,8}}$")
         self.assertEqual(
             payload["public_url"],
             f"https://{payload['tunnel_id']}.mysmeclabs.com",
@@ -58,6 +59,55 @@ class TunnelApiTests(TestCase):
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 401)
+
+    def test_create_tunnel_rejects_manual_tunnel_id(self):
+        response = self.client.post(
+            "/api/tunnels/create",
+            data=json.dumps({"tunnel_id": "custom-1234"}),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=self.auth_header,
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_other_user_cannot_connect_or_disconnect_foreign_tunnel(self):
+        user_model = get_user_model()
+        other = user_model.objects.create_user(
+            username="otheruser",
+            password="StrongPass!123",
+            email="other@example.com",
+        )
+        other_token = str(RefreshToken.for_user(other).access_token)
+        other_auth = f"Bearer {other_token}"
+
+        connect_key = "secret-key"
+        tunnel = Tunnel.objects.create(
+            owner=self.user,
+            tunnel_id=f"u{self.user.id}-123456",
+            connect_key_hash=Tunnel.hash_connect_key(connect_key),
+            is_active=False,
+        )
+
+        connect_response = self.client.post(
+            "/api/tunnels/connect",
+            data=json.dumps(
+                {
+                    "tunnel_id": tunnel.tunnel_id,
+                    "connect_key": connect_key,
+                    "local_target_url": "http://127.0.0.1:8000",
+                }
+            ),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=other_auth,
+        )
+        self.assertEqual(connect_response.status_code, 403)
+
+        disconnect_response = self.client.post(
+            "/api/tunnels/disconnect",
+            data=json.dumps({"tunnel_id": tunnel.tunnel_id, "connect_key": connect_key}),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=other_auth,
+        )
+        self.assertEqual(disconnect_response.status_code, 403)
 
     def test_connect_and_disconnect_cycle(self):
         connect_key = "secret-key"
