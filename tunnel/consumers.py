@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import base64
 import json
+import logging
 from typing import Any
+from urllib.parse import parse_qs
 
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
@@ -17,6 +19,7 @@ from .models import Tunnel, TunnelRequest
 from .runtime import notify_response_waiter
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 
 class TunnelConsumer(AsyncWebsocketConsumer):
@@ -25,42 +28,51 @@ class TunnelConsumer(AsyncWebsocketConsumer):
     tunnel_pk: int
 
     async def connect(self) -> None:
-        tunnel_id = (self.scope.get("url_route", {}).get("kwargs", {}).get("tunnel_id") or "").strip().lower()
-        connect_key = self._read_connect_key()
-        user = self._read_authenticated_user()
+        try:
+            tunnel_id = (self.scope.get("url_route", {}).get("kwargs", {}).get("tunnel_id") or "").strip().lower()
+            connect_key = self._read_connect_key()
+            user = self._read_authenticated_user()
 
-        if not tunnel_id or not connect_key or user is None:
-            await self.close(code=4401)
-            return
+            if not tunnel_id or not connect_key or user is None:
+                await self.close(code=4401)
+                return
 
-        tunnel = await self._get_tunnel(tunnel_id)
-        if tunnel is None:
-            await self.close(code=4404)
-            return
+            tunnel = await self._get_tunnel(tunnel_id)
+            if tunnel is None:
+                await self.close(code=4404)
+                return
 
-        if tunnel.get("owner_id") is None or int(tunnel["owner_id"]) != int(user.id):
-            await self.close(code=4403)
-            return
+            if tunnel.get("owner_id") is None or int(tunnel["owner_id"]) != int(user.id):
+                await self.close(code=4403)
+                return
 
-        verified = await self._verify_connect_key(tunnel["pk"], connect_key)
-        if not verified:
-            await self.close(code=4401)
-            return
+            verified = await self._verify_connect_key(tunnel["pk"], connect_key)
+            if not verified:
+                await self.close(code=4401)
+                return
 
-        self.tunnel_id = tunnel_id
-        self.tunnel_pk = tunnel["pk"]
-        self.group_name = f"tunnel.{tunnel_id}"
+            if self.channel_layer is None:
+                logger.error("Tunnel websocket rejected because channel layer is unavailable")
+                await self.close(code=4500)
+                return
 
-        await self.channel_layer.group_add(self.group_name, self.channel_name)
-        await self.accept()
-        await self._mark_connected(self.tunnel_pk)
-        await self.send_json(
-            {
-                "type": "connected",
-                "tunnel_id": self.tunnel_id,
-                "timestamp": timezone.now().isoformat(),
-            }
-        )
+            self.tunnel_id = tunnel_id
+            self.tunnel_pk = tunnel["pk"]
+            self.group_name = f"tunnel.{tunnel_id}"
+
+            await self.channel_layer.group_add(self.group_name, self.channel_name)
+            await self.accept()
+            await self._mark_connected(self.tunnel_pk)
+            await self.send_json(
+                {
+                    "type": "connected",
+                    "tunnel_id": self.tunnel_id,
+                    "timestamp": timezone.now().isoformat(),
+                }
+            )
+        except Exception:
+            logger.exception("Unhandled tunnel websocket connect failure")
+            await self.close(code=4500)
 
     async def disconnect(self, close_code: int) -> None:
         if hasattr(self, "group_name"):
@@ -115,23 +127,33 @@ class TunnelConsumer(AsyncWebsocketConsumer):
         prefix = "TunnelKey "
         if raw_auth.startswith(prefix):
             return raw_auth[len(prefix) :].strip()
+        query_string = (self.scope.get("query_string") or b"").decode("utf-8", errors="ignore")
+        if query_string:
+            query = parse_qs(query_string)
+            query_connect_key = (query.get("connect_key") or [""])[0].strip()
+            if query_connect_key:
+                return query_connect_key
         return ""
 
     def _read_authenticated_user(self) -> User | None:
         raw_auth = self._header_value(b"authorization")
-        if not raw_auth:
-            raw_auth = self._header_value(b"x-auth-token")
-        prefix = "Bearer "
-        if not raw_auth.startswith(prefix):
-            return None
-        raw_token = raw_auth[len(prefix) :].strip()
+        raw_token = ""
+        bearer_prefix = "Bearer "
+        if raw_auth.startswith(bearer_prefix):
+            raw_token = raw_auth[len(bearer_prefix) :].strip()
+        if not raw_token:
+            raw_header_token = self._header_value(b"x-auth-token")
+            if raw_header_token.startswith(bearer_prefix):
+                raw_token = raw_header_token[len(bearer_prefix) :].strip()
+            else:
+                raw_token = raw_header_token.strip()
         if not raw_token:
             return None
         auth = JWTAuthentication()
         try:
-            validated = auth.get_validated_token(raw_token.encode("utf-8"))
+            validated = auth.get_validated_token(raw_token)
             user = auth.get_user(validated)
-        except (InvalidToken, TokenError):
+        except (InvalidToken, TokenError, TypeError, ValueError):
             return None
         if not isinstance(user, User):
             return None
