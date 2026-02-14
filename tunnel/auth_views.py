@@ -18,6 +18,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_http_methods
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from accounts.models import DesktopAuthCode, User
@@ -71,13 +72,35 @@ def _token_response(user: User) -> dict[str, Any]:
     refresh["username"] = user.username
     refresh["is_guest"] = bool(user.is_guest)
     access = refresh.access_token
+    return _session_payload(
+        user=user,
+        access_token=str(access),
+        refresh_token=str(refresh),
+        expires_at=int(access["exp"]),
+    )
+
+
+def _session_payload(*, user: User, access_token: str, refresh_token: str, expires_at: int) -> dict[str, Any]:
     return {
         "mode": "guest" if user.is_guest else "authenticated",
-        "access_token": str(access),
-        "refresh_token": str(refresh),
-        "expires_at": int(access["exp"]),
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "expires_at": expires_at,
         "user": _serialize_user(user),
     }
+
+
+def _extract_optional_refresh_token(request: HttpRequest) -> str:
+    if not request.body:
+        return ""
+    try:
+        payload = json.loads(request.body.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return ""
+    if not isinstance(payload, dict):
+        return ""
+    raw = payload.get("refresh_token") or payload.get("refresh")
+    return str(raw or "").strip()
 
 
 def _is_allowed_redirect_uri(redirect_uri: str) -> bool:
@@ -274,6 +297,51 @@ def guest_login(request: HttpRequest) -> JsonResponse:
     return JsonResponse(_token_response(user))
 
 
+@csrf_exempt
+@require_http_methods(["POST"])
+def desktop_refresh_token(request: HttpRequest) -> JsonResponse:
+    payload, error = _parse_json_object(request)
+    if error:
+        return error
+
+    refresh_token = str(payload.get("refresh_token") or payload.get("refresh") or "").strip()
+    if not refresh_token:
+        return _json_error("refresh token is required", 400)
+
+    serializer = TokenRefreshSerializer(data={"refresh": refresh_token})
+    try:
+        serializer.is_valid(raise_exception=True)
+    except (InvalidToken, TokenError):
+        return _json_error("Unauthorized", 401)
+
+    validated_data = serializer.validated_data
+    access_token = str(validated_data.get("access") or "").strip()
+    next_refresh_token = str(validated_data.get("refresh") or refresh_token).strip()
+    if not access_token:
+        return _json_error("Unauthorized", 401)
+
+    auth = JWTAuthentication()
+    try:
+        validated_access = auth.get_validated_token(access_token)
+        user = auth.get_user(validated_access)
+    except (InvalidToken, TokenError):
+        return _json_error("Unauthorized", 401)
+    if not isinstance(user, User):
+        return _json_error("Unauthorized", 401)
+
+    expires_at = int(validated_access["exp"])
+    response_payload = _session_payload(
+        user=user,
+        access_token=access_token,
+        refresh_token=next_refresh_token,
+        expires_at=expires_at,
+    )
+    # Keep SimpleJWT-compatible keys for clients that still expect the default shape.
+    response_payload["access"] = access_token
+    response_payload["refresh"] = next_refresh_token
+    return JsonResponse(response_payload)
+
+
 @require_GET
 def auth_me(request: HttpRequest) -> JsonResponse:
     try:
@@ -287,6 +355,21 @@ def auth_me(request: HttpRequest) -> JsonResponse:
 @csrf_exempt
 @require_http_methods(["GET", "POST"])
 def auth_logout(request: HttpRequest) -> JsonResponse:
+    refresh_token = _extract_optional_refresh_token(request)
+    refresh_revoked = False
+    if refresh_token:
+        try:
+            RefreshToken(refresh_token).blacklist()
+            refresh_revoked = True
+        except TokenError:
+            refresh_revoked = False
+
     was_authenticated = bool(request.user.is_authenticated)
     logout(request)
-    return JsonResponse({"ok": True, "was_authenticated": was_authenticated})
+    return JsonResponse(
+        {
+            "ok": True,
+            "was_authenticated": was_authenticated,
+            "refresh_revoked": refresh_revoked,
+        }
+    )

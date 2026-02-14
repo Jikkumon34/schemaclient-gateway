@@ -274,6 +274,56 @@ class AuthApiTests(TestCase):
         self.assertEqual(me_response.status_code, 200)
         self.assertTrue(me_response.json()["user"]["is_guest"])
 
+    def test_refresh_endpoint_returns_desktop_session_payload(self):
+        guest_response = self.client.post("/api/auth/guest", data=json.dumps({}), content_type="application/json")
+        self.assertEqual(guest_response.status_code, 200)
+        initial_payload = guest_response.json()
+        initial_refresh = initial_payload["refresh_token"]
+        initial_access = initial_payload["access_token"]
+
+        refresh_response = self.client.post(
+            "/api/auth/token/refresh",
+            data=json.dumps({"refresh_token": initial_refresh}),
+            content_type="application/json",
+        )
+        self.assertEqual(refresh_response.status_code, 200)
+        payload = refresh_response.json()
+        self.assertEqual(payload["mode"], "guest")
+        self.assertIn("access_token", payload)
+        self.assertIn("refresh_token", payload)
+        self.assertIn("expires_at", payload)
+        self.assertIn("user", payload)
+        self.assertTrue(payload["user"]["is_guest"])
+        self.assertNotEqual(payload["access_token"], initial_access)
+
+    def test_refresh_endpoint_rotates_and_blacklists_previous_refresh_token(self):
+        guest_response = self.client.post("/api/auth/guest", data=json.dumps({}), content_type="application/json")
+        self.assertEqual(guest_response.status_code, 200)
+        refresh_token = guest_response.json()["refresh_token"]
+
+        first_refresh = self.client.post(
+            "/api/auth/token/refresh",
+            data=json.dumps({"refresh_token": refresh_token}),
+            content_type="application/json",
+        )
+        self.assertEqual(first_refresh.status_code, 200)
+        rotated_token = first_refresh.json()["refresh_token"]
+        self.assertNotEqual(rotated_token, refresh_token)
+
+        reuse_old_refresh = self.client.post(
+            "/api/auth/token/refresh",
+            data=json.dumps({"refresh_token": refresh_token}),
+            content_type="application/json",
+        )
+        self.assertEqual(reuse_old_refresh.status_code, 401)
+
+        use_rotated_refresh = self.client.post(
+            "/api/auth/token/refresh",
+            data=json.dumps({"refresh_token": rotated_token}),
+            content_type="application/json",
+        )
+        self.assertEqual(use_rotated_refresh.status_code, 200)
+
     def test_logout_endpoint_clears_authenticated_session(self):
         user_model = get_user_model()
         user_model.objects.create_user(username="charlie", password="StrongPass!123", email="charlie@example.com")
@@ -291,6 +341,26 @@ class AuthApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.json()["ok"])
         self.assertFalse(response.json()["was_authenticated"])
+
+    def test_logout_endpoint_blacklists_refresh_token(self):
+        guest_response = self.client.post("/api/auth/guest", data=json.dumps({}), content_type="application/json")
+        self.assertEqual(guest_response.status_code, 200)
+        refresh_token = guest_response.json()["refresh_token"]
+
+        logout_response = self.client.post(
+            "/api/auth/logout",
+            data=json.dumps({"refresh_token": refresh_token}),
+            content_type="application/json",
+        )
+        self.assertEqual(logout_response.status_code, 200)
+        self.assertTrue(logout_response.json()["refresh_revoked"])
+
+        refresh_response = self.client.post(
+            "/api/auth/token/refresh",
+            data=json.dumps({"refresh_token": refresh_token}),
+            content_type="application/json",
+        )
+        self.assertEqual(refresh_response.status_code, 401)
 
     def test_desktop_login_rejects_invalid_redirect_uri(self):
         response = self.client.get(

@@ -6,7 +6,6 @@ from typing import Any, Callable
 from django.contrib import admin
 from django.http import HttpRequest, HttpResponse
 from django.urls import path
-from rest_framework_simplejwt.views import TokenRefreshView
 from tunnel import views
 from tunnel import auth_views
 from tunnel import data_views
@@ -31,7 +30,7 @@ urlpatterns = [
     path("api/auth/desktop/exchange", _subdomain_passthrough(auth_views.desktop_exchange_code)),
     path("api/auth/guest", _subdomain_passthrough(auth_views.guest_login)),
     path("api/auth/me", _subdomain_passthrough(auth_views.auth_me)),
-    path("api/auth/token/refresh", _subdomain_passthrough(TokenRefreshView.as_view()), name="token_refresh"),
+    path("api/auth/token/refresh", _subdomain_passthrough(auth_views.desktop_refresh_token), name="token_refresh"),
     path("api/tunnels/health", _subdomain_passthrough(views.tunnel_health)),
     path("api/tunnels/create", _subdomain_passthrough(views.create_tunnel)),
     path("api/tunnels/connect", _subdomain_passthrough(views.connect_tunnel)),
