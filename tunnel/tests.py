@@ -69,6 +69,63 @@ class TunnelApiTests(TestCase):
         )
         self.assertEqual(response.status_code, 400)
 
+    def test_create_tunnel_reuses_existing_and_rotates_connect_key(self):
+        first = self.client.post(
+            "/api/tunnels/create",
+            data=json.dumps({}),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=self.auth_header,
+        )
+        self.assertEqual(first.status_code, 201)
+        first_payload = first.json()
+        tunnel_id = first_payload["tunnel_id"]
+        first_connect_key = first_payload["connect_key"]
+
+        second = self.client.post(
+            "/api/tunnels/create",
+            data=json.dumps({}),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=self.auth_header,
+        )
+        self.assertEqual(second.status_code, 200)
+        second_payload = second.json()
+        self.assertEqual(second_payload["tunnel_id"], tunnel_id)
+        self.assertNotEqual(second_payload["connect_key"], first_connect_key)
+
+        tunnel = Tunnel.objects.get(tunnel_id=tunnel_id)
+        self.assertTrue(tunnel.verify_connect_key(second_payload["connect_key"]))
+        self.assertFalse(tunnel.verify_connect_key(first_connect_key))
+
+    def test_reset_tunnel_deletes_existing_and_allows_new(self):
+        first = self.client.post(
+            "/api/tunnels/create",
+            data=json.dumps({}),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=self.auth_header,
+        )
+        self.assertEqual(first.status_code, 201)
+        first_payload = first.json()
+        first_id = first_payload["tunnel_id"]
+
+        reset = self.client.post(
+            "/api/tunnels/reset",
+            data=json.dumps({}),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=self.auth_header,
+        )
+        self.assertEqual(reset.status_code, 200)
+        self.assertEqual(Tunnel.objects.filter(owner=self.user).count(), 0)
+
+        second = self.client.post(
+            "/api/tunnels/create",
+            data=json.dumps({}),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=self.auth_header,
+        )
+        self.assertEqual(second.status_code, 201)
+        second_payload = second.json()
+        self.assertNotEqual(second_payload["tunnel_id"], first_id)
+
     def test_other_user_cannot_connect_or_disconnect_foreign_tunnel(self):
         user_model = get_user_model()
         other = user_model.objects.create_user(

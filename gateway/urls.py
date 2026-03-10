@@ -35,6 +35,7 @@ urlpatterns = [
     path("api/tunnels/create", _subdomain_passthrough(views.create_tunnel)),
     path("api/tunnels/connect", _subdomain_passthrough(views.connect_tunnel)),
     path("api/tunnels/disconnect", _subdomain_passthrough(views.disconnect_tunnel)),
+    path("api/tunnels/reset", _subdomain_passthrough(views.reset_tunnel)),
     path("api/collections", _subdomain_passthrough(data_views.collections_snapshot)),
     path("api/schemas", _subdomain_passthrough(data_views.schemas_snapshot)),
     path("api/tunnels/<path:path>", _subdomain_passthrough(views.unsupported_tunnel_api)),

@@ -140,6 +140,17 @@ def _create_tunnel_record(owner: User) -> tuple[Tunnel | None, str | None, JsonR
     return None, None, _json_error("Could not allocate a unique tunnel ID", 503)
 
 
+def _get_existing_user_tunnel(owner: User) -> Tunnel | None:
+    return Tunnel.objects.filter(owner=owner).order_by("-created_at").first()
+
+
+def _rotate_connect_key(tunnel: Tunnel) -> str:
+    connect_key = secrets.token_urlsafe(24)
+    tunnel.connect_key_hash = Tunnel.hash_connect_key(connect_key)
+    tunnel.save(update_fields=["connect_key_hash", "updated_at"])
+    return connect_key
+
+
 def _build_public_url(request: HttpRequest, tunnel_id: str) -> str:
     scheme = str(getattr(settings, "TUNNEL_PUBLIC_SCHEME", "https")).strip().lower() or "https"
     base_domain = str(getattr(settings, "TUNNEL_BASE_DOMAIN", "")).strip().lower()
@@ -260,6 +271,20 @@ def create_tunnel(request: HttpRequest) -> JsonResponse:
         return _json_error("Manual tunnel_id is not allowed. Tunnel IDs are server generated.", 400)
 
     assert user is not None
+    existing = _get_existing_user_tunnel(user)
+    if existing is not None:
+        connect_key = _rotate_connect_key(existing)
+        logger.info("Tunnel reused", extra={"tunnel_id": existing.tunnel_id, "owner_id": user.id})
+        return JsonResponse(
+            {
+                "tunnel_id": existing.tunnel_id,
+                "public_url": _build_public_url(request, existing.tunnel_id),
+                "connect_key": connect_key,
+                "reused": True,
+            },
+            status=200,
+        )
+
     tunnel, connect_key, create_error = _create_tunnel_record(user)
     if create_error:
         return create_error
@@ -272,9 +297,38 @@ def create_tunnel(request: HttpRequest) -> JsonResponse:
             "tunnel_id": tunnel.tunnel_id,
             "public_url": _build_public_url(request, tunnel.tunnel_id),
             "connect_key": connect_key,
+            "reused": False,
         },
         status=201,
     )
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def reset_tunnel(request: HttpRequest) -> JsonResponse:
+    user, user_error = _authenticate_bearer_user(request)
+    if user_error:
+        return user_error
+
+    payload, error = _parse_json_object(request)
+    if error:
+        return error
+
+    assert user is not None
+    tunnel_id = _normalize_tunnel_id(payload.get("tunnel_id")) if payload else None
+    qs = Tunnel.objects.filter(owner=user)
+    if tunnel_id:
+        qs = qs.filter(tunnel_id=tunnel_id)
+
+    if not qs.exists():
+        return _json_error("Tunnel not found", 404)
+
+    if qs.filter(ws_connection_count__gt=0).exists():
+        return _json_error("Tunnel is active. Disconnect before resetting the URL.", 409)
+
+    deleted_count, _ = qs.delete()
+    logger.info("Tunnel reset", extra={"owner_id": user.id, "tunnel_id": tunnel_id, "deleted": deleted_count})
+    return JsonResponse({"ok": True, "deleted": deleted_count})
 
 
 @csrf_exempt
