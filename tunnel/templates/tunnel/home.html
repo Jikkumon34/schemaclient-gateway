@@ -1,12 +1,58 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'tunnel/images/logo-32.png' %}">
+    <link rel="icon" type="image/png" sizes="64x64" href="{% static 'tunnel/images/logo-64.png' %}">
+    <link rel="apple-touch-icon" sizes="128x128" href="{% static 'tunnel/images/logo-128.png' %}">
+    <link rel="shortcut icon" href="{% static 'tunnel/images/favicon.ico' %}" type="image/x-icon">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SchemaClient — Tunnel, Monitor & Validate Your Local APIs</title>
+    <title>SchemaClient — Desktop API Client with Tunneling, Monitoring & Schema Validation</title>
     <meta name="description"
-        content="SchemaClient is a native desktop API workspace built on Tauri. Tunnel your localhost, monitor traffic in real-time, and enforce schema validation — all from one tool.">
+        content="SchemaClient is a native desktop API client built with Tauri. Send requests, tunnel your localhost to a public URL, monitor HTTP traffic in real-time, and validate payloads against schemas — all from one app.">
+    <meta name="keywords"
+        content="API client, desktop API tool, REST client, API testing, localhost tunnel, HTTP monitor, schema validation, OpenAPI import, Postman alternative, Tauri app, API workspace, request collections, cloud sync">
+    <meta name="author" content="SchemaClient">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://mysmeclabs.com/">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="SchemaClient — Desktop API Client with Tunneling & Schema Validation">
+    <meta property="og:description"
+        content="A native desktop API workspace. Send requests, tunnel localhost to the web, monitor traffic in real-time, and validate payloads against schemas.">
+    <meta property="og:url" content="https://mysmeclabs.com/">
+    <meta property="og:site_name" content="SchemaClient">
+    <meta property="og:locale" content="en_US">
+    <meta property="og:image" content="{% static 'tunnel/images/logo.png' %}">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="SchemaClient — Desktop API Client with Tunneling & Schema Validation">
+    <meta name="twitter:description"
+        content="A native desktop API workspace. Send requests, tunnel localhost, monitor traffic, and validate schemas — all in one app.">
+    <meta name="twitter:image" content="{% static 'tunnel/images/logo.png' %}">
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "SchemaClient",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Windows, macOS, Linux",
+        "description": "A native desktop API client with tunneling, real-time traffic monitoring, and schema validation. Built with Tauri and React.",
+        "url": "https://mysmeclabs.com/",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+        }
+    }
+    </script>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..800&display=swap" rel="stylesheet">
 
@@ -131,7 +177,6 @@
             transform: translateY(-4px);
         }
 
-        /* Hero specific */
         .hero-gradient {
             background: radial-gradient(ellipse 80% 60% at 50% 40%, rgba(0, 255, 65, 0.08) 0%, transparent 60%),
                 radial-gradient(ellipse 60% 50% at 30% 50%, rgba(0, 130, 255, 0.04) 0%, transparent 50%);
@@ -176,41 +221,10 @@
             -webkit-backdrop-filter: blur(12px);
         }
 
-        @keyframes typing {
-            from {
-                width: 0;
-            }
-
-            to {
-                width: 100%;
-            }
-        }
-
-        .typing-effect {
-            overflow: hidden;
-            white-space: nowrap;
-            border-right: 2px solid #00ff41;
-            animation: typing 2.5s steps(40, end), blink 1s step-end infinite;
-        }
-
-        @keyframes blink {
-
-            0%,
-            100% {
-                border-color: #00ff41;
-            }
-
-            50% {
-                border-color: transparent;
-            }
-        }
-
-        /* Smooth scroll */
         html {
             scroll-behavior: smooth;
         }
 
-        /* ===== MOBILE MENU (hidden by default on all sizes) ===== */
         .mobile-menu {
             display: none;
         }
@@ -219,7 +233,6 @@
             display: flex;
         }
 
-        /* ===== RESPONSIVE / MOBILE ===== */
         @media (max-width: 767px) {
             .orbit-ring {
                 display: none;
@@ -285,18 +298,13 @@
     <!-- ============================================================ -->
     <nav class="fixed w-full z-40 border-b border-white/10 bg-sc-bg/90 backdrop-blur-md">
         <div class="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div
-                    class="w-8 h-8 rounded border border-green-500/50 flex items-center justify-center bg-green-500/10">
-                    <svg class="w-4 h-4 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2">
-                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-                    </svg>
-                </div>
+            <a href="/" class="flex items-center gap-3">
+                <img src="{% static 'tunnel/images/logo-32.png' %}" alt="SchemaClient Logo" width="32" height="32"
+                    class="rounded">
                 <span class="text-green-500 font-bold text-sm tracking-wider">SchemaClient<span
                         class="text-gray-600">_</span></span>
                 <span class="animate-blink block w-2 h-4 bg-green-500 ml-0"></span>
-            </div>
+            </a>
             <div class="hidden md:flex gap-8 text-xs uppercase tracking-widest text-gray-500">
                 <a href="#features"
                     class="hover:text-green-500 transition hover:underline decoration-green-500 decoration-2 underline-offset-4">Features</a>
@@ -305,6 +313,9 @@
                     It Works</a>
                 <a href="#monitor"
                     class="hover:text-green-500 transition hover:underline decoration-green-500 decoration-2 underline-offset-4">Monitor</a>
+                <a href="#use-cases"
+                    class="hover:text-green-500 transition hover:underline decoration-green-500 decoration-2 underline-offset-4">Use
+                    Cases</a>
                 <a href="#download"
                     class="hover:text-green-500 transition hover:underline decoration-green-500 decoration-2 underline-offset-4">Download</a>
             </div>
@@ -315,7 +326,7 @@
                 </a>
                 <!-- Mobile hamburger -->
                 <button onclick="document.getElementById('mobileMenu').classList.toggle('active')"
-                    class="mobile-menu-btn md:hidden text-green-500 p-1">
+                    class="mobile-menu-btn md:hidden text-green-500 p-1" aria-label="Toggle navigation menu">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M4 6h16M4 12h16M4 18h16" />
@@ -330,6 +341,7 @@
             <a href="#how-it-works" class="hover:text-green-500 transition py-2 border-b border-white/5">How It
                 Works</a>
             <a href="#monitor" class="hover:text-green-500 transition py-2 border-b border-white/5">Monitor</a>
+            <a href="#use-cases" class="hover:text-green-500 transition py-2 border-b border-white/5">Use Cases</a>
             <a href="#download" class="hover:text-green-500 transition py-2">Download</a>
         </div>
     </nav>
@@ -361,7 +373,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
-                        E2E Encrypted
+                        Secure Tunnels
                     </div>
                 </div>
                 <div class="absolute top-[25%] right-[6%] animate-float-delay">
@@ -371,7 +383,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                         </svg>
-                        Live Monitor
+                        Real-Time Monitor
                     </div>
                 </div>
                 <div class="absolute bottom-[30%] left-[5%] animate-float-delay">
@@ -381,7 +393,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                         </svg>
-                        Schema Enforced
+                        Schema Validation
                     </div>
                 </div>
                 <div class="absolute bottom-[28%] right-[8%] animate-float">
@@ -391,7 +403,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
                         </svg>
-                        OpenAPI Import
+                        Cloud Sync
                     </div>
                 </div>
             </div>
@@ -402,7 +414,7 @@
                     class="inline-flex items-center gap-3 border border-gray-700/80 bg-gray-900/60 rounded-full px-5 py-2 text-xs text-gray-400 glass-pill">
                     <span class="flex items-center gap-1.5">
                         <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                        <span class="text-green-500 font-semibold">LIVE</span>
+                        <span class="text-green-500 font-semibold">FREE</span>
                     </span>
                     <span class="w-px h-3 bg-gray-700"></span>
                     <span>Native Desktop App — Built with Tauri + React</span>
@@ -419,7 +431,7 @@
             <!-- Sub-headline -->
             <p
                 class="text-lg md:text-xl text-gray-400 mb-10 max-w-2xl leading-relaxed animate-fade-up-delay relative z-10">
-                Tunnel your localhost globally. Monitor every HTTP packet in real-time.
+                Send API requests. Tunnel your localhost to the web. Monitor every HTTP packet in real-time.
                 Validate payloads against strict schemas.
                 <span class="text-white font-medium">All from one lightweight desktop app.</span>
             </p>
@@ -439,7 +451,7 @@
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                     </svg>
-                    See What It Does
+                    Explore Features
                 </a>
             </div>
 
@@ -464,58 +476,64 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
-                            schemaclient — tunnel + monitor
+                            SchemaClient — API Workspace
                         </div>
-                        <div class="text-xs text-gray-600">bash</div>
+                        <div class="text-xs text-gray-600">v2.0</div>
                     </div>
 
                     <!-- Terminal body -->
                     <div class="p-5 md:p-6 text-left text-[13px] md:text-sm leading-relaxed">
+                        <!-- Request section -->
                         <div class="mb-4">
-                            <span class="text-green-500 font-semibold">root@dev</span><span
-                                class="text-gray-600">:</span><span class="text-blue-400">~/project</span><span
-                                class="text-gray-600">$</span>
-                            <span class="text-white"> schemaclient tunnel --port 8000 --id myapp</span>
+                            <span class="text-gray-600 text-xs uppercase tracking-widest">Request</span>
                         </div>
-                        <div class="text-gray-500 space-y-1 mb-4">
-                            <div>Connecting to gateway: <span class="text-gray-300">https://mysmeclabs.com</span></div>
-                            <div>Initializing encrypted tunnel... <span
-                                    class="text-green-500">[████████████████████]</span> <span
-                                    class="text-green-400">done</span></div>
+                        <div class="flex items-center gap-2 mb-3">
+                            <span
+                                class="px-2 py-0.5 rounded bg-green-500/10 text-green-500 text-xs font-bold">GET</span>
+                            <span class="text-blue-400">https://myapp.schemaclienttunnel.mysmeclabs.com</span><span
+                                class="text-gray-300">/api/users</span>
+                            <span
+                                class="ml-auto px-2 py-0.5 bg-green-500/10 text-green-500 rounded text-[10px]">SEND</span>
                         </div>
+                        <div class="flex gap-4 text-xs text-gray-500 mb-4 border-b border-white/5 pb-3">
+                            <span class="text-white border-b border-green-500 pb-1">Headers</span>
+                            <span>Body</span>
+                            <span>Auth</span>
+                            <span>Params</span>
+                        </div>
+
+                        <!-- Response section -->
                         <div class="border-l-2 border-green-500/40 pl-4 space-y-1 mb-4">
-                            <div class="text-green-400 font-semibold">✓ Tunnel established</div>
-                            <div class="text-gray-400">Public URL: <span
-                                    class="text-blue-400 underline decoration-blue-400/30">https://myapp.schemaclienttunnel.mysmeclabs.com</span>
+                            <div class="flex items-center gap-3">
+                                <span class="text-green-400 font-semibold">200 OK</span>
+                                <span class="text-gray-600 text-xs">12ms</span>
+                                <span class="text-gray-600 text-xs">2.1 KB</span>
+                                <span
+                                    class="ml-auto text-green-500 text-xs flex items-center gap-1">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                            d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    Schema valid
+                                </span>
                             </div>
-                            <div class="text-gray-400">Local target: <span
-                                    class="text-gray-300">http://127.0.0.1:8000</span></div>
                         </div>
-                        <div class="text-gray-500 space-y-1.5 border-t border-white/5 pt-4">
-                            <div class="flex items-center gap-2">
-                                <span class="text-green-500">▸</span>
-                                <span class="text-gray-300">GET</span>
-                                <span>/api/users</span>
-                                <span class="ml-auto text-green-500 font-semibold">200</span>
-                                <span class="text-gray-600">12ms</span>
+                        <div class="text-gray-500 space-y-0.5 text-xs bg-white/[0.02] rounded p-3">
+                            <div class="text-gray-600">// Response body</div>
+                            <div>{</div>
+                            <div class="pl-4">"<span class="text-blue-400">users</span>": [</div>
+                            <div class="pl-8">{ "<span class="text-blue-400">id</span>": <span
+                                    class="text-orange-400">1</span>, "<span class="text-blue-400">name</span>": "<span
+                                    class="text-green-400">Alice</span>", "<span
+                                    class="text-blue-400">role</span>": "<span class="text-green-400">admin</span>" },
                             </div>
-                            <div class="flex items-center gap-2">
-                                <span class="text-blue-400">▸</span>
-                                <span class="text-gray-300">POST</span>
-                                <span>/api/orders</span>
-                                <span class="ml-auto text-green-500 font-semibold">201</span>
-                                <span class="text-gray-600">45ms</span>
+                            <div class="pl-8">{ "<span class="text-blue-400">id</span>": <span
+                                    class="text-orange-400">2</span>, "<span class="text-blue-400">name</span>": "<span
+                                    class="text-green-400">Bob</span>", "<span
+                                    class="text-blue-400">role</span>": "<span class="text-green-400">editor</span>" }
                             </div>
-                            <div class="flex items-center gap-2">
-                                <span class="text-red-400">▸</span>
-                                <span class="text-gray-300">POST</span>
-                                <span>/api/payments</span>
-                                <span class="ml-auto text-orange-400 font-semibold">400</span>
-                                <span class="text-red-400 text-xs">schema violation</span>
-                            </div>
-                            <div class="mt-2 text-green-500/70 text-xs flex items-center gap-1">
-                                Listening for traffic <span class="animate-blink">▊</span>
-                            </div>
+                            <div class="pl-4">]</div>
+                            <div>}</div>
                         </div>
                     </div>
                 </div>
@@ -530,12 +548,12 @@
                         class="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center flex-shrink-0 group-hover:bg-green-500/20 transition">
                         <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                         </svg>
                     </div>
                     <div>
-                        <div class="text-white font-semibold text-sm">Secure Tunneling</div>
-                        <div class="text-gray-500 text-xs">Expose local APIs globally</div>
+                        <div class="text-white font-semibold text-sm">API Client</div>
+                        <div class="text-gray-500 text-xs">Send & test requests</div>
                     </div>
                 </div>
                 <div
@@ -544,12 +562,12 @@
                         class="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-500/20 transition">
                         <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
                     </div>
                     <div>
-                        <div class="text-white font-semibold text-sm">Traffic Monitor</div>
-                        <div class="text-gray-500 text-xs">Inspect every HTTP packet</div>
+                        <div class="text-white font-semibold text-sm">Localhost Tunnels</div>
+                        <div class="text-gray-500 text-xs">Expose local APIs publicly</div>
                     </div>
                 </div>
                 <div
@@ -574,14 +592,15 @@
         <!-- ============================================================ -->
         <section class="stats-bar grid grid-cols-2 md:grid-cols-4 border-b border-white/10 mb-16">
             <div class="p-6 md:p-10 border-r border-white/10 hover:bg-white/5 transition group">
-                <div class="text-2xl md:text-4xl font-bold text-white mb-2 group-hover:text-green-400 transition">E2E
+                <div class="text-2xl md:text-4xl font-bold text-white mb-2 group-hover:text-green-400 transition">7+
                 </div>
-                <div class="text-[10px] md:text-xs text-green-500 uppercase tracking-widest">Encrypted Tunnels</div>
+                <div class="text-[10px] md:text-xs text-green-500 uppercase tracking-widest">HTTP Methods Supported
+                </div>
             </div>
             <div class="p-6 md:p-10 border-r border-white/10 hover:bg-white/5 transition group">
-                <div class="text-2xl md:text-4xl font-bold text-white mb-2 group-hover:text-green-400 transition">
-                    &lt;5ms</div>
-                <div class="text-[10px] md:text-xs text-green-500 uppercase tracking-widest">Proxy Overhead</div>
+                <div class="text-2xl md:text-4xl font-bold text-white mb-2 group-hover:text-green-400 transition">4
+                </div>
+                <div class="text-[10px] md:text-xs text-green-500 uppercase tracking-widest">Auth Types Built-In</div>
             </div>
             <div class="p-6 md:p-10 border-r border-white/10 hover:bg-white/5 transition group">
                 <div class="text-2xl md:text-4xl font-bold text-white mb-2 group-hover:text-green-400 transition">500+
@@ -589,9 +608,9 @@
                 <div class="text-[10px] md:text-xs text-green-500 uppercase tracking-widest">Logs Per Session</div>
             </div>
             <div class="p-6 md:p-10 hover:bg-white/5 transition group">
-                <div class="text-2xl md:text-4xl font-bold text-white mb-2 group-hover:text-green-400 transition">5
+                <div class="text-2xl md:text-4xl font-bold text-white mb-2 group-hover:text-green-400 transition">3
                 </div>
-                <div class="text-[10px] md:text-xs text-green-500 uppercase tracking-widest">Platforms Supported</div>
+                <div class="text-[10px] md:text-xs text-green-500 uppercase tracking-widest">Desktop Platforms</div>
             </div>
         </section>
 
@@ -602,7 +621,8 @@
             <div class="flex items-end justify-between mb-12">
                 <div>
                     <h2 class="text-3xl font-bold text-white mb-2 uppercase tracking-wide">CORE CAPABILITIES</h2>
-                    <p class="text-gray-500 text-sm">/sys/modules — What SchemaClient does for you</p>
+                    <p class="text-gray-500 text-sm">/sys/modules — Everything you need to build, test, and debug APIs
+                    </p>
                 </div>
                 <div class="hidden md:block w-32 h-1 bg-green-900 relative overflow-hidden rounded-full">
                     <div class="absolute inset-0 bg-green-500 w-1/2 animate-scanline"></div>
@@ -610,7 +630,23 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-1">
-                <!-- Feature 1: Tunneling -->
+                <!-- Feature 1: API Client -->
+                <div
+                    class="feature-card bg-white/5 p-8 border border-transparent hover:border-green-500/30 transition group border-glow">
+                    <div class="text-green-500 mb-4 opacity-50 group-hover:opacity-100 transition">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2 uppercase tracking-wide">REST API Client</h3>
+                    <p class="text-sm text-gray-400 leading-relaxed">
+                        Build and send HTTP requests with a full-featured editor. Supports GET, POST, PUT, PATCH,
+                        DELETE, HEAD, and OPTIONS with multi-tab workspaces for parallel API testing.
+                    </p>
+                </div>
+
+                <!-- Feature 2: Tunneling -->
                 <div
                     class="feature-card bg-white/5 p-8 border border-transparent hover:border-green-500/30 transition group border-glow">
                     <div class="text-green-500 mb-4 opacity-50 group-hover:opacity-100 transition">
@@ -619,15 +655,14 @@
                                 d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
                     </div>
-                    <h3 class="text-lg font-bold text-white mb-2 uppercase tracking-wide">Encrypted Tunnels</h3>
+                    <h3 class="text-lg font-bold text-white mb-2 uppercase tracking-wide">Localhost Tunnels</h3>
                     <p class="text-sm text-gray-400 leading-relaxed">
-                        Expose your local server (<code class="text-green-500/80">localhost:8000</code>) to the world
-                        with a secure public URL.
-                        Each session gets a unique subdomain — no code uploaded, no data stored remotely.
+                        Expose your local server to the internet with a secure public URL. Each tunnel gets a unique
+                        subdomain — share it with your team or use it for webhook testing.
                     </p>
                 </div>
 
-                <!-- Feature 2: API Monitoring -->
+                <!-- Feature 3: Traffic Monitor -->
                 <div
                     class="feature-card bg-white/5 p-8 border border-transparent hover:border-green-500/30 transition group border-glow">
                     <div class="text-green-500 mb-4 opacity-50 group-hover:opacity-100 transition">
@@ -636,14 +671,14 @@
                                 d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                         </svg>
                     </div>
-                    <h3 class="text-lg font-bold text-white mb-2 uppercase tracking-wide">API Traffic Monitor</h3>
+                    <h3 class="text-lg font-bold text-white mb-2 uppercase tracking-wide">Real-Time Monitor</h3>
                     <p class="text-sm text-gray-400 leading-relaxed">
-                        A built-in HTTP proxy that intercepts every request and response flowing through your APIs.
-                        See method, path, status, duration, headers, and full body — all in real-time.
+                        Watch every HTTP request and response flowing through your tunnel in real-time. Inspect method,
+                        path, status, duration, headers, and full body content as it happens.
                     </p>
                 </div>
 
-                <!-- Feature 3: Schema Validation -->
+                <!-- Feature 4: Schema Validation -->
                 <div
                     class="feature-card bg-white/5 p-8 border border-transparent hover:border-green-500/30 transition group border-glow">
                     <div class="text-green-500 mb-4 opacity-50 group-hover:opacity-100 transition">
@@ -654,12 +689,12 @@
                     </div>
                     <h3 class="text-lg font-bold text-white mb-2 uppercase tracking-wide">Schema Validation</h3>
                     <p class="text-sm text-gray-400 leading-relaxed">
-                        Define request and response schemas, then validate live traffic against them.
-                        Catch malformed payloads, missing fields, and type mismatches before they hit production.
+                        Define request and response schemas with field-level constraints — types, min/max length,
+                        patterns, enums, and more. Validate live API traffic against your contracts automatically.
                     </p>
                 </div>
 
-                <!-- Feature 4: OpenAPI Import  -->
+                <!-- Feature 5: OpenAPI Import -->
                 <div
                     class="feature-card bg-white/5 p-8 border border-transparent hover:border-green-500/30 transition group border-glow">
                     <div class="text-green-500 mb-4 opacity-50 group-hover:opacity-100 transition">
@@ -670,13 +705,12 @@
                     </div>
                     <h3 class="text-lg font-bold text-white mb-2 uppercase tracking-wide">OpenAPI Import</h3>
                     <p class="text-sm text-gray-400 leading-relaxed">
-                        Import your existing OpenAPI / Swagger specs (JSON & YAML). SchemaClient automatically converts
-                        them into
-                        validation schemas — zero manual configuration required.
+                        Import your existing OpenAPI 3.0 or Swagger specs in JSON and YAML. SchemaClient automatically
+                        converts them into validation schemas — no manual configuration needed.
                     </p>
                 </div>
 
-                <!-- Feature 5: Collections -->
+                <!-- Feature 6: Collections & Cloud Sync -->
                 <div
                     class="feature-card bg-white/5 p-8 border border-transparent hover:border-green-500/30 transition group border-glow">
                     <div class="text-green-500 mb-4 opacity-50 group-hover:opacity-100 transition">
@@ -685,30 +719,38 @@
                                 d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                         </svg>
                     </div>
-                    <h3 class="text-lg font-bold text-white mb-2 uppercase tracking-wide">Request Collections</h3>
+                    <h3 class="text-lg font-bold text-white mb-2 uppercase tracking-wide">Collections & Cloud Sync</h3>
                     <p class="text-sm text-gray-400 leading-relaxed">
-                        Organize your API requests into named collections. Save endpoints, headers, auth configs,
-                        and body payloads — then replay them with a single click.
+                        Organize API requests into named collections with base URLs, variables, and auth configs.
+                        Sign in to sync your collections and schemas across all your devices via the cloud.
                     </p>
                 </div>
+            </div>
 
-                <!-- Feature 6: Live Proxy Audit -->
-                <div
-                    class="feature-card bg-white/5 p-8 border border-transparent hover:border-green-500/30 transition group border-glow">
-                    <div class="text-green-500 mb-4 opacity-50 group-hover:opacity-100 transition">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                    </div>
-                    <h3 class="text-lg font-bold text-white mb-2 uppercase tracking-wide">Traffic Audit Logs</h3>
-                    <p class="text-sm text-gray-400 leading-relaxed">
-                        Every proxied request is persisted with full audit trails — headers, bodies, status codes, and
-                        timing.
-                        Filter, search, and review traffic history for debugging and compliance.
+            <!-- Additional Feature Highlights -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-1 mt-1">
+                <div class="bg-white/[0.03] p-5 border border-transparent hover:border-green-500/20 transition group">
+                    <div class="text-green-500 text-xs uppercase tracking-widest mb-2 font-semibold">Multi-Tab
+                        Workspace</div>
+                    <p class="text-xs text-gray-500">Work on multiple API requests simultaneously with independent tabs.
                     </p>
+                </div>
+                <div class="bg-white/[0.03] p-5 border border-transparent hover:border-green-500/20 transition group">
+                    <div class="text-green-500 text-xs uppercase tracking-widest mb-2 font-semibold">4 Auth Types</div>
+                    <p class="text-xs text-gray-500">Basic, Bearer Token, API Key, and OAuth2 authentication built-in.
+                    </p>
+                </div>
+                <div class="bg-white/[0.03] p-5 border border-transparent hover:border-green-500/20 transition group">
+                    <div class="text-green-500 text-xs uppercase tracking-widest mb-2 font-semibold">JSON / Form / Raw
+                    </div>
+                    <p class="text-xs text-gray-500">Send JSON, form-data, URL-encoded, raw text, or binary file
+                        bodies.</p>
+                </div>
+                <div class="bg-white/[0.03] p-5 border border-transparent hover:border-green-500/20 transition group">
+                    <div class="text-green-500 text-xs uppercase tracking-widest mb-2 font-semibold">Dark & Light
+                        Themes</div>
+                    <p class="text-xs text-gray-500">Switch between dark and light mode to match your workflow
+                        preference.</p>
                 </div>
             </div>
         </section>
@@ -720,118 +762,155 @@
             <div class="flex flex-col md:flex-row gap-12">
                 <div class="w-full md:w-1/2">
                     <h2 class="text-2xl font-bold text-white mb-2 uppercase tracking-wide">HOW IT WORKS</h2>
-                    <p class="text-gray-500 text-sm mb-8">/proc/pipeline — From localhost to production-ready</p>
+                    <p class="text-gray-500 text-sm mb-8">/proc/pipeline — From download to production-ready testing</p>
 
                     <ul class="space-y-5">
                         <li
                             class="flex items-start gap-4 text-gray-400 hover:text-white transition cursor-default group">
                             <span class="text-green-500 font-bold text-lg group-hover:text-green-400 mt-0.5">01.</span>
                             <div>
-                                <div class="font-semibold text-white text-sm">Start Tunnel</div>
-                                <div class="text-xs text-gray-500 mt-1">Point SchemaClient at your local server (e.g.
-                                    <code class="text-green-500/70">http://127.0.0.1:8000</code>) and connect to the
-                                    gateway.
-                                </div>
+                                <div class="font-semibold text-white text-sm">Download & Launch</div>
+                                <div class="text-xs text-gray-500 mt-1">Install SchemaClient on Windows, macOS, or
+                                    Linux. It launches as a lightweight native desktop app powered by Tauri.</div>
                             </div>
                         </li>
                         <li
                             class="flex items-start gap-4 text-gray-400 hover:text-white transition cursor-default group">
                             <span class="text-green-500 font-bold text-lg group-hover:text-green-400 mt-0.5">02.</span>
                             <div>
-                                <div class="font-semibold text-white text-sm">Get a Public URL</div>
-                                <div class="text-xs text-gray-500 mt-1">Receive a unique, encrypted subdomain like <code
-                                        class="text-blue-400/70">myapp.schemaclient.net</code> — shareable with your
-                                    team instantly.</div>
+                                <div class="font-semibold text-white text-sm">Build & Send Requests</div>
+                                <div class="text-xs text-gray-500 mt-1">Use the built-in API client to craft requests
+                                    with custom headers, auth, query params, and body payloads. View responses instantly.
+                                </div>
                             </div>
                         </li>
                         <li
                             class="flex items-start gap-4 text-gray-400 hover:text-white transition cursor-default group">
                             <span class="text-green-500 font-bold text-lg group-hover:text-green-400 mt-0.5">03.</span>
                             <div>
-                                <div class="font-semibold text-white text-sm">Monitor Traffic</div>
-                                <div class="text-xs text-gray-500 mt-1">The built-in proxy captures every
-                                    request/response — method, path, status, headers, and body content.</div>
+                                <div class="font-semibold text-white text-sm">Create a Tunnel</div>
+                                <div class="text-xs text-gray-500 mt-1">Point a tunnel at your local server (e.g.
+                                    <code class="text-green-500/70">localhost:8000</code>). You'll get a public URL like
+                                    <code class="text-blue-400/70">myapp.schemaclienttunnel.mysmeclabs.com</code> —
+                                    shareable instantly.
+                                </div>
                             </div>
                         </li>
                         <li
                             class="flex items-start gap-4 text-gray-400 hover:text-white transition cursor-default group">
                             <span class="text-green-500 font-bold text-lg group-hover:text-green-400 mt-0.5">04.</span>
                             <div>
-                                <div class="font-semibold text-white text-sm">Validate Against Schema</div>
-                                <div class="text-xs text-gray-500 mt-1">Attach a schema to any monitored endpoint.
-                                    Incoming and outgoing payloads are validated in real-time.</div>
+                                <div class="font-semibold text-white text-sm">Monitor Traffic</div>
+                                <div class="text-xs text-gray-500 mt-1">Every request flowing through your tunnel is
+                                    captured in the monitor — method, path, status, headers, body, and timing.</div>
                             </div>
                         </li>
                         <li
                             class="flex items-start gap-4 text-gray-400 hover:text-white transition cursor-default group">
                             <span class="text-green-500 font-bold text-lg group-hover:text-green-400 mt-0.5">05.</span>
                             <div>
-                                <div class="font-semibold text-white text-sm">Debug & Iterate</div>
-                                <div class="text-xs text-gray-500 mt-1">Click any log entry to inspect full request and
-                                    response details. Fix issues instantly in your local dev environment.</div>
+                                <div class="font-semibold text-white text-sm">Validate with Schemas</div>
+                                <div class="text-xs text-gray-500 mt-1">Define or import schemas for your endpoints.
+                                    Every API payload is validated in real-time — catch type mismatches and missing fields
+                                    instantly.</div>
                             </div>
                         </li>
                         <li
                             class="flex items-start gap-4 text-gray-400 hover:text-white transition cursor-default group">
                             <span class="text-green-500 font-bold text-lg group-hover:text-green-400 mt-0.5">06.</span>
                             <div>
-                                <div class="font-semibold text-white text-sm">Ship With Confidence</div>
-                                <div class="text-xs text-gray-500 mt-1">With validated schemas and audited traffic,
-                                    deploy to production knowing your API contracts are enforced.</div>
+                                <div class="font-semibold text-white text-sm">Save & Sync</div>
+                                <div class="text-xs text-gray-500 mt-1">Organize requests into collections. Sign in to
+                                    sync your collections and schemas across devices via the cloud.</div>
                             </div>
                         </li>
                     </ul>
                 </div>
                 <div class="w-full md:w-1/2">
-                    <div class="bg-black border border-white/20 p-5 rounded-sm glow-box">
-                        <div class="flex gap-2 mb-3 border-b border-white/10 pb-2">
-                            <div class="w-3 h-3 rounded-full bg-red-900"></div>
-                            <div class="w-3 h-3 rounded-full bg-yellow-900"></div>
-                            <div class="w-3 h-3 rounded-full bg-green-900"></div>
-                            <span class="text-xs text-gray-600 ml-2">~/quickstart.sh</span>
-                        </div>
-                        <code class="text-sm text-gray-300 block leading-relaxed">
-                            <span class="text-purple-400">#!/bin/bash</span><br><br>
-                            <span class="text-gray-500"># 1. Start the tunnel to expose localhost</span><br>
-                            schemaclient tunnel \<br>
-                            &nbsp;&nbsp;--gateway https://mysmeclabs.com \<br>
-                            &nbsp;&nbsp;--target http://127.0.0.1:8000 \<br>
-                            &nbsp;&nbsp;--id myapp<br><br>
-                            <span class="text-gray-500"># 2. Start the API proxy monitor</span><br>
-                            schemaclient monitor \<br>
-                            &nbsp;&nbsp;--port 9000 \<br>
-                            &nbsp;&nbsp;--target http://127.0.0.1:8000 \<br>
-                            &nbsp;&nbsp;--schema ./api-schema.json<br><br>
-                            <span class="text-green-500">✓ Tunnel active at myapp.schemaclient.net</span><br>
-                            <span class="text-green-500">✓ Monitor proxy listening on :9000</span><br>
-                            <span class="text-gray-500">├ Request #42: <span class="text-green-500">200 OK</span> — /api/users (12ms)</span><br>
-                            <span class="text-gray-500">├ Request #43: <span class="text-orange-400">400</span> — Schema violation blocked</span><br>
-                            <span class="text-gray-500">└ Request #44: <span class="text-green-500">200 OK</span> — /api/orders (8ms)</span>
-                        </code>
-                    </div>
-
                     <!-- Architecture Diagram -->
-                    <div class="mt-6 bg-sc-surface border border-white/10 rounded-sm p-5">
-                        <div class="text-xs text-gray-600 uppercase tracking-widest mb-4">Architecture Flow</div>
+                    <div class="bg-sc-surface border border-white/10 rounded-sm p-5 mb-6">
+                        <div class="text-xs text-gray-600 uppercase tracking-widest mb-4">Tunnel Architecture</div>
                         <div class="arch-flow flex items-center justify-between text-xs text-center gap-2">
                             <div class="flex-1 border border-green-500/30 rounded p-3 bg-green-500/5">
                                 <div class="text-green-500 font-bold mb-1">Client</div>
                                 <div class="text-gray-500">Browser / App</div>
                             </div>
-                            <div class="text-green-500 arch-arrow">→</div>
+                            <div class="text-green-500 arch-arrow">&#8594;</div>
                             <div class="flex-1 border border-blue-500/30 rounded p-3 bg-blue-500/5">
                                 <div class="text-blue-400 font-bold mb-1">Gateway</div>
                                 <div class="text-gray-500">Public URL</div>
                             </div>
-                            <div class="text-green-500 arch-arrow">→</div>
+                            <div class="text-green-500 arch-arrow">&#8594;</div>
                             <div class="flex-1 border border-yellow-500/30 rounded p-3 bg-yellow-500/5">
-                                <div class="text-yellow-400 font-bold mb-1">Tunnel</div>
-                                <div class="text-gray-500">E2E Encrypted</div>
+                                <div class="text-yellow-400 font-bold mb-1">WebSocket</div>
+                                <div class="text-gray-500">Secure Tunnel</div>
                             </div>
-                            <div class="text-green-500 arch-arrow">→</div>
+                            <div class="text-green-500 arch-arrow">&#8594;</div>
                             <div class="flex-1 border border-purple-500/30 rounded p-3 bg-purple-500/5">
                                 <div class="text-purple-400 font-bold mb-1">Localhost</div>
                                 <div class="text-gray-500">Your Server</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Request Builder Preview -->
+                    <div class="bg-black border border-white/20 p-5 rounded-sm glow-box">
+                        <div class="flex gap-2 mb-3 border-b border-white/10 pb-2">
+                            <div class="w-3 h-3 rounded-full bg-red-900"></div>
+                            <div class="w-3 h-3 rounded-full bg-yellow-900"></div>
+                            <div class="w-3 h-3 rounded-full bg-green-900"></div>
+                            <span class="text-xs text-gray-600 ml-2">API Request Builder</span>
+                        </div>
+                        <div class="text-sm text-gray-300 leading-relaxed space-y-3">
+                            <!-- Tab bar -->
+                            <div class="flex gap-1 text-xs mb-3">
+                                <span
+                                    class="bg-white/10 text-green-500 px-3 py-1 rounded-t border-b-2 border-green-500">GET
+                                    /users</span>
+                                <span class="bg-white/5 text-gray-500 px-3 py-1 rounded-t">POST /orders</span>
+                                <span class="bg-white/5 text-gray-500 px-3 py-1 rounded-t">PUT /settings</span>
+                                <span class="text-gray-600 px-2 py-1">+</span>
+                            </div>
+                            <!-- URL bar -->
+                            <div class="flex gap-2 items-center text-xs">
+                                <span
+                                    class="px-2 py-1 bg-green-500/10 text-green-500 font-bold rounded">GET</span>
+                                <span
+                                    class="flex-1 bg-white/5 border border-white/10 rounded px-3 py-1.5 text-gray-400">https://api.example.com/v1/users?page=1</span>
+                                <span
+                                    class="px-3 py-1.5 bg-green-500 text-black font-bold rounded text-[10px]">SEND</span>
+                            </div>
+                            <!-- Auth indicator -->
+                            <div class="flex items-center gap-2 text-xs text-gray-500">
+                                <svg class="w-3 h-3 text-yellow-500" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                                Auth: <span class="text-yellow-400">Bearer Token</span>
+                                <span class="ml-auto text-gray-600">Collection: <span class="text-white">My
+                                        API</span></span>
+                            </div>
+                            <!-- Response preview -->
+                            <div class="border-t border-white/10 pt-3 mt-2">
+                                <div class="flex items-center gap-3 text-xs mb-2">
+                                    <span class="text-green-500 font-bold">200 OK</span>
+                                    <span class="text-gray-600">14ms</span>
+                                    <span class="text-gray-600">3.2 KB</span>
+                                    <span class="ml-auto flex items-center gap-1 text-green-500">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                                d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        Schema valid
+                                    </span>
+                                </div>
+                                <div class="bg-white/[0.03] rounded p-2 text-xs text-gray-500">
+                                    <span class="text-gray-600">{</span> "<span
+                                        class="text-blue-400">data</span>": [<span class="text-gray-600">...</span>],
+                                    "<span class="text-blue-400">total</span>": <span
+                                        class="text-orange-400">42</span> <span class="text-gray-600">}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -844,8 +923,9 @@
         <!-- ============================================================ -->
         <section id="monitor" class="py-24 border-b border-white/10">
             <div class="mb-12">
-                <h2 class="text-3xl font-bold text-white mb-2 uppercase tracking-wide">API MONITOR</h2>
-                <p class="text-gray-500 text-sm">/dev/proxy — Intercept, inspect, and validate every packet</p>
+                <h2 class="text-3xl font-bold text-white mb-2 uppercase tracking-wide">TRAFFIC MONITOR</h2>
+                <p class="text-gray-500 text-sm">/dev/proxy — Intercept, inspect, and validate every request in
+                    real-time</p>
             </div>
 
             <div class="gradient-border rounded-sm overflow-hidden">
@@ -854,14 +934,15 @@
                     <div
                         class="flex items-center justify-between bg-[#1a1a1a] px-4 py-2.5 text-xs border-b border-black/50">
                         <div class="flex items-center gap-3">
-                            <span class="text-green-500">●</span>
-                            <span class="text-gray-400">Monitor — Collection: <span class="text-white">Demo
-                                    API</span></span>
+                            <span class="text-green-500">&#9679;</span>
+                            <span class="text-gray-400">Monitor — Tunnel: <span
+                                    class="text-white">myapp</span></span>
                         </div>
                         <div class="flex items-center gap-3">
-                            <span class="text-gray-500">Port: <span class="text-white">9000</span></span>
-                            <span class="text-gray-500">Target: <span class="text-blue-400">localhost:8000</span></span>
-                            <span class="px-2 py-0.5 bg-green-500/10 text-green-500 rounded text-[10px]">RUNNING</span>
+                            <span class="text-gray-500">Public: <span
+                                    class="text-blue-400">myapp.schemaclienttunnel.mysmeclabs.com</span></span>
+                            <span
+                                class="px-2 py-0.5 bg-green-500/10 text-green-500 rounded text-[10px]">CONNECTED</span>
                         </div>
                     </div>
 
@@ -886,7 +967,7 @@
                                     <td class="px-4 py-2.5 text-green-500 font-semibold">200</td>
                                     <td class="px-4 py-2.5">12ms</td>
                                     <td class="px-4 py-2.5">2.1K</td>
-                                    <td class="px-4 py-2.5"><span class="text-green-500">✓</span></td>
+                                    <td class="px-4 py-2.5"><span class="text-green-500">&#10003;</span></td>
                                 </tr>
                                 <tr class="border-b border-white/5 hover:bg-white/5 transition">
                                     <td class="px-4 py-2.5"><span
@@ -895,7 +976,7 @@
                                     <td class="px-4 py-2.5 text-green-500 font-semibold">201</td>
                                     <td class="px-4 py-2.5">45ms</td>
                                     <td class="px-4 py-2.5">890B</td>
-                                    <td class="px-4 py-2.5"><span class="text-green-500">✓</span></td>
+                                    <td class="px-4 py-2.5"><span class="text-green-500">&#10003;</span></td>
                                 </tr>
                                 <tr class="border-b border-white/5 hover:bg-white/5 transition bg-red-500/5">
                                     <td class="px-4 py-2.5"><span
@@ -904,16 +985,17 @@
                                     <td class="px-4 py-2.5 text-orange-500 font-semibold">400</td>
                                     <td class="px-4 py-2.5">8ms</td>
                                     <td class="px-4 py-2.5">340B</td>
-                                    <td class="px-4 py-2.5"><span class="text-red-400">✗</span></td>
+                                    <td class="px-4 py-2.5"><span class="text-red-400">&#10007;</span></td>
                                 </tr>
                                 <tr class="border-b border-white/5 hover:bg-white/5 transition">
                                     <td class="px-4 py-2.5"><span
-                                            class="px-2 py-0.5 rounded bg-orange-500/10 text-orange-500">PUT</span></td>
+                                            class="px-2 py-0.5 rounded bg-orange-500/10 text-orange-500">PUT</span>
+                                    </td>
                                     <td class="px-4 py-2.5 font-mono">/api/v1/users/42</td>
                                     <td class="px-4 py-2.5 text-green-500 font-semibold">200</td>
                                     <td class="px-4 py-2.5">23ms</td>
                                     <td class="px-4 py-2.5">1.4K</td>
-                                    <td class="px-4 py-2.5"><span class="text-green-500">✓</span></td>
+                                    <td class="px-4 py-2.5"><span class="text-green-500">&#10003;</span></td>
                                 </tr>
                                 <tr class="border-b border-white/5 hover:bg-white/5 transition">
                                     <td class="px-4 py-2.5"><span
@@ -922,7 +1004,7 @@
                                     <td class="px-4 py-2.5 text-green-500 font-semibold">204</td>
                                     <td class="px-4 py-2.5">6ms</td>
                                     <td class="px-4 py-2.5">0B</td>
-                                    <td class="px-4 py-2.5"><span class="text-gray-600">—</span></td>
+                                    <td class="px-4 py-2.5"><span class="text-gray-600">&mdash;</span></td>
                                 </tr>
                                 <tr class="hover:bg-white/5 transition">
                                     <td class="px-4 py-2.5"><span
@@ -931,7 +1013,7 @@
                                     <td class="px-4 py-2.5 text-green-500 font-semibold">200</td>
                                     <td class="px-4 py-2.5">34ms</td>
                                     <td class="px-4 py-2.5">8.7K</td>
-                                    <td class="px-4 py-2.5"><span class="text-green-500">✓</span></td>
+                                    <td class="px-4 py-2.5"><span class="text-green-500">&#10003;</span></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -949,18 +1031,99 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
                 <div class="bg-white/5 border border-white/10 rounded-sm p-5 hover:border-green-500/20 transition">
                     <div class="text-green-500 text-xs uppercase tracking-widest mb-2">Full Request Inspection</div>
-                    <p class="text-sm text-gray-400">Click any row to deep-dive into headers, body, cookies, and timing
-                        breakdown for both request and response.</p>
+                    <p class="text-sm text-gray-400">Click any row to inspect the complete request and response —
+                        headers, body, cookies, status, and timing breakdown.</p>
                 </div>
                 <div class="bg-white/5 border border-white/10 rounded-sm p-5 hover:border-green-500/20 transition">
                     <div class="text-green-500 text-xs uppercase tracking-widest mb-2">Live Schema Validation</div>
-                    <p class="text-sm text-gray-400">Attach any schema to the monitor. Every proxied request and
-                        response is validated in real-time against your contract.</p>
+                    <p class="text-sm text-gray-400">Attach schemas to your monitor. Every request and response payload
+                        is validated against your contracts as traffic flows through.</p>
                 </div>
                 <div class="bg-white/5 border border-white/10 rounded-sm p-5 hover:border-green-500/20 transition">
-                    <div class="text-green-500 text-xs uppercase tracking-widest mb-2">Persistent Audit Logs</div>
-                    <p class="text-sm text-gray-400">All traffic is saved to disk collections. Reload, search, and
-                        analyze historical API sessions any time.</p>
+                    <div class="text-green-500 text-xs uppercase tracking-widest mb-2">Search & Filter Logs</div>
+                    <p class="text-sm text-gray-400">Filter traffic by method, status, or path. Search through up to
+                        500 request logs per session to find exactly what you need.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- USE CASES -->
+        <!-- ============================================================ -->
+        <section id="use-cases" class="py-24 border-b border-white/10">
+            <div class="mb-12">
+                <h2 class="text-3xl font-bold text-white mb-2 uppercase tracking-wide">USE CASES</h2>
+                <p class="text-gray-500 text-sm">/usr/scenarios — Built for developers who need more than just a
+                    request sender</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white/[0.03] border border-white/10 rounded-sm p-6 hover:border-green-500/20 transition">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div
+                            class="w-10 h-10 rounded bg-green-500/10 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                    d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-white font-bold text-sm uppercase">Webhook Development</h3>
+                    </div>
+                    <p class="text-sm text-gray-400 leading-relaxed">
+                        Expose your local server with a tunnel and use the public URL as a webhook callback. Monitor
+                        incoming webhook payloads in real-time and validate them against your expected schema.
+                    </p>
+                </div>
+
+                <div class="bg-white/[0.03] border border-white/10 rounded-sm p-6 hover:border-green-500/20 transition">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div
+                            class="w-10 h-10 rounded bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-white font-bold text-sm uppercase">Team API Demos</h3>
+                    </div>
+                    <p class="text-sm text-gray-400 leading-relaxed">
+                        Share your local API with teammates via a tunnel URL. They can test against your development
+                        server without deploying, while you monitor all their requests live in the traffic monitor.
+                    </p>
+                </div>
+
+                <div class="bg-white/[0.03] border border-white/10 rounded-sm p-6 hover:border-green-500/20 transition">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div
+                            class="w-10 h-10 rounded bg-purple-500/10 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-white font-bold text-sm uppercase">API Contract Testing</h3>
+                    </div>
+                    <p class="text-sm text-gray-400 leading-relaxed">
+                        Import your OpenAPI spec, then validate every API response against the defined schema.
+                        Catch missing fields, wrong types, and contract violations before they reach production.
+                    </p>
+                </div>
+
+                <div class="bg-white/[0.03] border border-white/10 rounded-sm p-6 hover:border-green-500/20 transition">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div
+                            class="w-10 h-10 rounded bg-yellow-500/10 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                    d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                            </svg>
+                        </div>
+                        <h3 class="text-white font-bold text-sm uppercase">Frontend-Backend Integration</h3>
+                    </div>
+                    <p class="text-sm text-gray-400 leading-relaxed">
+                        Debug API calls between your frontend and backend by routing traffic through SchemaClient's
+                        monitor. See exactly what your frontend sends and what your backend returns.
+                    </p>
                 </div>
             </div>
         </section>
@@ -971,40 +1134,55 @@
         <section class="py-24 border-b border-white/10">
             <div class="mb-12">
                 <h2 class="text-3xl font-bold text-white mb-2 uppercase tracking-wide">CROSS-PLATFORM</h2>
-                <p class="text-gray-500 text-sm">/bin/targets — Built with Tauri for native performance everywhere</p>
+                <p class="text-gray-500 text-sm">/bin/targets — Built with Tauri for native performance on every desktop
+                </p>
             </div>
 
-            <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div
                     class="bg-white/5 p-6 border border-white/10 hover:border-green-500/30 transition text-center group feature-card">
-                    <div class="text-4xl mb-3 group-hover:scale-110 transition">💻</div>
-                    <div class="text-white font-bold text-sm mb-1">macOS</div>
-                    <div class="text-gray-500 text-xs">Universal Binary</div>
-                </div>
-                <div
-                    class="bg-white/5 p-6 border border-white/10 hover:border-green-500/30 transition text-center group feature-card">
-                    <div class="text-4xl mb-3 group-hover:scale-110 transition">🪟</div>
+                    <div class="text-3xl mb-3 group-hover:scale-110 transition">
+                        <svg class="w-10 h-10 mx-auto text-gray-400 group-hover:text-green-400 transition" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                    </div>
                     <div class="text-white font-bold text-sm mb-1">Windows</div>
                     <div class="text-gray-500 text-xs">x64 / ARM64</div>
                 </div>
                 <div
                     class="bg-white/5 p-6 border border-white/10 hover:border-green-500/30 transition text-center group feature-card">
-                    <div class="text-4xl mb-3 group-hover:scale-110 transition">🐧</div>
+                    <div class="text-3xl mb-3 group-hover:scale-110 transition">
+                        <svg class="w-10 h-10 mx-auto text-gray-400 group-hover:text-green-400 transition" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <div class="text-white font-bold text-sm mb-1">macOS</div>
+                    <div class="text-gray-500 text-xs">Universal Binary</div>
+                </div>
+                <div
+                    class="bg-white/5 p-6 border border-white/10 hover:border-green-500/30 transition text-center group feature-card">
+                    <div class="text-3xl mb-3 group-hover:scale-110 transition">
+                        <svg class="w-10 h-10 mx-auto text-gray-400 group-hover:text-green-400 transition" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                    </div>
                     <div class="text-white font-bold text-sm mb-1">Linux</div>
-                    <div class="text-gray-500 text-xs">AppImage / deb</div>
+                    <div class="text-gray-500 text-xs">AppImage / .deb</div>
                 </div>
-                <div
-                    class="bg-white/5 p-6 border border-white/10 hover:border-green-500/30 transition text-center group feature-card">
-                    <div class="text-4xl mb-3 group-hover:scale-110 transition">📱</div>
-                    <div class="text-white font-bold text-sm mb-1">iOS</div>
-                    <div class="text-gray-500 text-xs">Coming Soon</div>
-                </div>
-                <div
-                    class="bg-white/5 p-6 border border-white/10 hover:border-green-500/30 transition text-center group feature-card">
-                    <div class="text-4xl mb-3 group-hover:scale-110 transition">🤖</div>
-                    <div class="text-white font-bold text-sm mb-1">Android</div>
-                    <div class="text-gray-500 text-xs">Coming Soon</div>
-                </div>
+            </div>
+
+            <div class="mt-6 bg-white/[0.02] border border-white/10 rounded-sm p-6 text-center">
+                <p class="text-sm text-gray-400">
+                    Powered by <span class="text-white font-semibold">Tauri</span> — the Rust-based framework for
+                    building tiny, fast desktop apps. SchemaClient uses native webviews instead of bundling a full
+                    browser, keeping the install size under <span class="text-green-500 font-semibold">15 MB</span>.
+                </p>
             </div>
         </section>
 
@@ -1014,50 +1192,69 @@
         <section id="download" class="py-24">
             <div class="text-center max-w-3xl mx-auto">
                 <div class="mb-8">
+                    <img src="{% static 'tunnel/images/logo-128.png' %}" alt="SchemaClient" width="80" height="80"
+                        class="mx-auto mb-6 drop-shadow-[0_0_20px_rgba(0,255,65,0.3)]">
                     <div
                         class="inline-block border-2 border-green-500 px-6 py-2 mb-6 text-xs text-green-500 uppercase tracking-widest animate-pulse-glow">
-                        [ READY TO DEPLOY ]
+                        [ FREE & OPEN SOURCE ]
                     </div>
                     <h2 class="text-4xl md:text-5xl font-bold text-white mb-4 tracking-tight">
                         TAKE CONTROL OF<br>YOUR API WORKFLOW
                     </h2>
                     <p class="text-gray-400 text-lg mb-8 leading-relaxed">
-                        Stop switching between ngrok, Postman, and browser dev tools.
-                        SchemaClient gives you tunneling, monitoring, validation, and API testing — all in one native
-                        desktop app.
+                        Stop switching between tunneling tools, API clients, and browser dev tools.
+                        SchemaClient gives you request building, tunneling, traffic monitoring, schema validation, and
+                        cloud sync — all in one native desktop app.
                     </p>
                 </div>
 
                 <div class="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-                    <button
-                        class="bg-green-600 text-black px-10 py-4 font-bold text-sm uppercase hover:bg-green-500 transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,255,65,0.3)]">
+                    <a href="#"
+                        class="bg-green-600 text-black px-10 py-4 font-bold text-sm uppercase hover:bg-green-500 transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,255,65,0.3)] inline-flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
                         Download for Desktop
-                    </button>
-                    <button
-                        class="border border-white/20 px-10 py-4 font-bold text-sm uppercase hover:border-green-500 hover:text-green-500 transition-all duration-300">
-                        View Source on GitHub
-                    </button>
+                    </a>
+                    <a href="#"
+                        class="border border-white/20 px-10 py-4 font-bold text-sm uppercase hover:border-green-500 hover:text-green-500 transition-all duration-300 inline-flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                        View on GitHub
+                    </a>
                 </div>
 
-                <div class="max-w-xl mx-auto">
-                    <div class="bg-black border border-white/20 p-6 rounded-sm glow-box">
-                        <div class="text-xs text-gray-500 mb-3 uppercase tracking-widest">Quick Install</div>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm font-mono">
-                            <div class="bg-white/5 p-3 rounded">
-                                <div class="text-gray-500 text-xs mb-2">macOS</div>
-                                <div class="text-green-500 text-xs">brew install schemaclient</div>
-                            </div>
-                            <div class="bg-white/5 p-3 rounded">
-                                <div class="text-gray-500 text-xs mb-2">Windows</div>
-                                <div class="text-green-500 text-xs">winget install schemaclient</div>
-                            </div>
-                            <div class="bg-white/5 p-3 rounded">
-                                <div class="text-gray-500 text-xs mb-2">Linux</div>
-                                <div class="text-green-500 text-xs">snap install schemaclient</div>
-                            </div>
-                        </div>
-                    </div>
+                <!-- Supported platforms summary -->
+                <div class="flex flex-wrap justify-center gap-6 text-xs text-gray-500 mb-8">
+                    <span class="flex items-center gap-2">
+                        <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M5 13l4 4L19 7" />
+                        </svg>
+                        Windows x64 / ARM64
+                    </span>
+                    <span class="flex items-center gap-2">
+                        <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M5 13l4 4L19 7" />
+                        </svg>
+                        macOS Universal
+                    </span>
+                    <span class="flex items-center gap-2">
+                        <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M5 13l4 4L19 7" />
+                        </svg>
+                        Linux AppImage / .deb
+                    </span>
                 </div>
+
+                <p class="text-xs text-gray-600">
+                    No account required for local usage. Sign in to enable cloud sync for collections and schemas.
+                </p>
             </div>
         </section>
 
@@ -1068,32 +1265,23 @@
     <!-- ============================================================ -->
     <footer class="border-t border-white/10 bg-sc-panel py-12">
         <div class="max-w-7xl mx-auto px-6">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
                 <div>
                     <div class="text-white font-bold mb-3 uppercase tracking-wide text-sm">Product</div>
                     <ul class="space-y-2 text-xs text-gray-500">
                         <li><a href="#features" class="hover:text-green-500 transition">Features</a></li>
+                        <li><a href="#monitor" class="hover:text-green-500 transition">Traffic Monitor</a></li>
+                        <li><a href="#use-cases" class="hover:text-green-500 transition">Use Cases</a></li>
                         <li><a href="#download" class="hover:text-green-500 transition">Download</a></li>
-                        <li><a href="#" class="hover:text-green-500 transition">Changelog</a></li>
-                        <li><a href="#" class="hover:text-green-500 transition">Roadmap</a></li>
                     </ul>
                 </div>
                 <div>
-                    <div class="text-white font-bold mb-3 uppercase tracking-wide text-sm">Developers</div>
+                    <div class="text-white font-bold mb-3 uppercase tracking-wide text-sm">Resources</div>
                     <ul class="space-y-2 text-xs text-gray-500">
-                        <li><a href="#" class="hover:text-green-500 transition">Documentation</a></li>
-                        <li><a href="#" class="hover:text-green-500 transition">API Reference</a></li>
-                        <li><a href="#" class="hover:text-green-500 transition">CLI Guide</a></li>
-                        <li><a href="#" class="hover:text-green-500 transition">GitHub</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <div class="text-white font-bold mb-3 uppercase tracking-wide text-sm">Community</div>
-                    <ul class="space-y-2 text-xs text-gray-500">
-                        <li><a href="#" class="hover:text-green-500 transition">Discord</a></li>
-                        <li><a href="#" class="hover:text-green-500 transition">Twitter</a></li>
-                        <li><a href="#" class="hover:text-green-500 transition">Reddit</a></li>
-                        <li><a href="#" class="hover:text-green-500 transition">Blog</a></li>
+                        <li><a href="#how-it-works" class="hover:text-green-500 transition">How It Works</a></li>
+                        <li><a href="#features" class="hover:text-green-500 transition">API Client</a></li>
+                        <li><a href="#features" class="hover:text-green-500 transition">Schema Validation</a></li>
+                        <li><a href="#features" class="hover:text-green-500 transition">Cloud Sync</a></li>
                     </ul>
                 </div>
                 <div>
@@ -1101,22 +1289,21 @@
                     <ul class="space-y-2 text-xs text-gray-500">
                         <li><a href="#" class="hover:text-green-500 transition">Privacy Policy</a></li>
                         <li><a href="#" class="hover:text-green-500 transition">Terms of Service</a></li>
-                        <li><a href="#" class="hover:text-green-500 transition">Open Source Licenses</a></li>
-                        <li><a href="#" class="hover:text-green-500 transition">Security</a></li>
                     </ul>
                 </div>
             </div>
 
             <div
                 class="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center text-xs text-gray-600 uppercase tracking-widest">
-                <div>
-                    &copy; 2026 SchemaClient Systems. <br class="md:hidden">
-                    <span class="text-green-900 neon-text-subtle">Encrypted connection established.</span>
+                <div class="flex items-center gap-3">
+                    <img src="{% static 'tunnel/images/logo-32.png' %}" alt="SchemaClient" width="24" height="24"
+                        class="opacity-60">
+                    <span>&copy; 2026 SchemaClient. <br class="md:hidden">
+                        <span class="text-green-900 neon-text-subtle">Built for developers, by developers.</span>
+                    </span>
                 </div>
                 <div class="flex gap-6 mt-4 md:mt-0">
                     <a href="#" class="hover:text-green-500 transition">GitHub</a>
-                    <a href="#" class="hover:text-green-500 transition">Discord</a>
-                    <a href="#" class="hover:text-green-500 transition">Twitter</a>
                 </div>
             </div>
         </div>

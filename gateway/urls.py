@@ -4,6 +4,7 @@ from functools import wraps
 from typing import Any, Callable
 
 from django.contrib import admin
+from django.contrib.staticfiles.views import serve as staticfiles_serve
 from django.http import HttpRequest, HttpResponse
 from django.urls import path
 from tunnel import views
@@ -39,6 +40,7 @@ urlpatterns = [
     path("api/collections", _subdomain_passthrough(data_views.collections_snapshot)),
     path("api/schemas", _subdomain_passthrough(data_views.schemas_snapshot)),
     path("api/tunnels/<path:path>", _subdomain_passthrough(views.unsupported_tunnel_api)),
+    path("static/<path:path>", staticfiles_serve, {"insecure": True}),
     path("", views.gateway_dispatch),
     path("<path:path>", views.gateway_dispatch),
 ]
